@@ -1,4 +1,4 @@
-module humungus.tedunangst.com/r/honk
+module github.com/nothub/honk
 
 go 1.20
 
