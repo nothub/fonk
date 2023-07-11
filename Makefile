@@ -1,14 +1,14 @@
+honk: .preflightcheck schema.sql $(shell ls go.mod go.sum *.go **/*.go)
+	go build -race -o honk
 
-all: honk
+.preflightcheck: tools/preflight.sh
+	@sh ./tools/preflight.sh
 
-honk: .preflightcheck schema.sql *.go go.mod
-	go build -mod=`ls -d vendor 2> /dev/null` -o honk
-
-.preflightcheck: preflight.sh
-	@sh ./preflight.sh
-
+.PHONY: clean
 clean:
-	rm -f honk
+	go clean
 
+.PHONY: test
 test:
+	go vet
 	go test
