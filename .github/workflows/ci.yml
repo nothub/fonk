@@ -1,0 +1,15 @@
+name: publish
+on:
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: '20 4 * * *'
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout repo'
+        uses: actions/checkout@v3.5.3
+      - name: 'Pass'
+        run: true
