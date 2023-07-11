@@ -19,6 +19,7 @@ mkdir -p "/data"
 chown -R "honk:honk" "/data"
 
 if test ! -f "/data/honk.db"; then
+    echo >&2 "honk.db is missing, doing init..."
     if  test -z "${USER}"   ||
         test -z "${PASS}"   ||
         test -z "${DOMAIN}"; then
@@ -26,6 +27,7 @@ if test ! -f "/data/honk.db"; then
         exit 1
     fi
     printf "%s\n%s\n%s\n%s\n" "${USER}" "${PASS}" "0.0.0.0:8080" "${DOMAIN}" | honk -datadir "/data" init
+    exit 0
 fi
 
 honk -datadir "/data" -viewdir "/views" "$@"
