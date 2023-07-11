@@ -77,7 +77,8 @@ old-honk backup "$(date +backup-%F)"
 honk is available packaged as a
 [Docker image](https://hub.docker.com/r/n0thub/honk).
 
-#### usage examples
+<details>
+  <summary>Usage examples</summary>
 
 ##### persistent data volume
 
@@ -92,7 +93,7 @@ docker run --rm            \
 
 ##### initial database setup
 
-The database will be initialized if not found.
+The database will be initialized if not found.  
 A password can be supplied in plaintext or as bcrypt hash.
 
 ```sh
@@ -145,6 +146,8 @@ docker run --rm            \
   -e "PGID=9002"           \
   "n0thub/honk:latest"
 ```
+
+</details>
 
 ### Documentation
 
