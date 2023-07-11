@@ -28,4 +28,4 @@ if test ! -f "/data/honk.db"; then
     printf "%s\n%s\n%s\n%s\n" "${USER}" "${PASS}" "0.0.0.0:8080" "${DOMAIN}" | honk -datadir "/data" init
 fi
 
-honk -datadir "/data" -viewdir "/usr/local/share/honk/" "$@"
+honk -datadir "/data" -viewdir "/views" "$@"

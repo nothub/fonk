@@ -23,7 +23,7 @@ RUN apt-get update -qy                           \
  && apt-get autoremove -qy                       \
  && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder "/app/src/views/" "/usr/local/share/honk/views/"
+COPY --from=builder "/app/src/views/" "/views/"
 COPY --from=builder "/app/src/honk"   "/usr/local/bin/honk"
 COPY                "entrypoint.sh"   "/entrypoint.sh"
 

@@ -78,9 +78,9 @@ func getmaplink(u *login.UserInfo) string {
 
 func getInfo(r *http.Request) map[string]interface{} {
 	templinfo := make(map[string]interface{})
-	templinfo["StyleParam"] = getassetparam(viewDir + "/views/style.css")
+	templinfo["StyleParam"] = getassetparam(viewDir + "/style.css")
 	templinfo["LocalStyleParam"] = getassetparam(dataDir + "/views/local.css")
-	templinfo["JSParam"] = getassetparam(viewDir + "/views/honkpage.js")
+	templinfo["JSParam"] = getassetparam(viewDir + "/honkpage.js")
 	templinfo["LocalJSParam"] = getassetparam(dataDir + "/views/local.js")
 	templinfo["MiscJSParam"] = getassetparam(dataDir + "/views/misc.js")
 	templinfo["ServerName"] = serverName
@@ -2284,7 +2284,7 @@ func serveasset(w http.ResponseWriter, r *http.Request, basedir string) {
 	if !develMode {
 		w.Header().Set("Cache-Control", "max-age=7776000")
 	}
-	http.ServeFile(w, r, basedir+"/views"+r.URL.Path)
+	http.ServeFile(w, r, basedir+r.URL.Path)
 }
 func servehelp(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
@@ -2644,30 +2644,30 @@ func serve() {
 	emuinit()
 
 	readviews = templates.Load(develMode,
-		viewDir+"/views/honkpage.html",
-		viewDir+"/views/honkfrags.html",
-		viewDir+"/views/honkers.html",
-		viewDir+"/views/chatter.html",
-		viewDir+"/views/hfcs.html",
-		viewDir+"/views/combos.html",
-		viewDir+"/views/honkform.html",
-		viewDir+"/views/honk.html",
-		viewDir+"/views/account.html",
-		viewDir+"/views/about.html",
-		viewDir+"/views/funzone.html",
-		viewDir+"/views/login.html",
-		viewDir+"/views/xzone.html",
-		viewDir+"/views/msg.html",
-		viewDir+"/views/header.html",
-		viewDir+"/views/onts.html",
-		viewDir+"/views/emus.html",
-		viewDir+"/views/honkpage.js",
+		viewDir+"/honkpage.html",
+		viewDir+"/honkfrags.html",
+		viewDir+"/honkers.html",
+		viewDir+"/chatter.html",
+		viewDir+"/hfcs.html",
+		viewDir+"/combos.html",
+		viewDir+"/honkform.html",
+		viewDir+"/honk.html",
+		viewDir+"/account.html",
+		viewDir+"/about.html",
+		viewDir+"/funzone.html",
+		viewDir+"/login.html",
+		viewDir+"/xzone.html",
+		viewDir+"/msg.html",
+		viewDir+"/header.html",
+		viewDir+"/onts.html",
+		viewDir+"/emus.html",
+		viewDir+"/honkpage.js",
 	)
 	if !develMode {
 		assets := []string{
-			viewDir + "/views/style.css",
+			viewDir + "/style.css",
+			viewDir + "/honkpage.js",
 			dataDir + "/views/local.css",
-			viewDir + "/views/honkpage.js",
 			dataDir + "/views/local.js",
 		}
 		for _, s := range assets {

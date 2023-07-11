@@ -130,7 +130,7 @@ docker run --rm              \
 docker run --rm                                    \
   -p "127.0.0.1:8080:8080"                         \
   -v "${PWD}/data:/data"                           \
-  -v "${PWD}/views:/usr/local/share/honk/views:ro" \
+  -v "${PWD}/views:/views:ro" \
   "n0thub/honk:latest"
 ```
 
