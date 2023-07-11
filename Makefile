@@ -12,3 +12,7 @@ clean:
 test:
 	go vet
 	go test
+
+.PHONY: image
+image:
+	docker build -t "honk:dev" .
