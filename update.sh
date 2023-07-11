@@ -2,7 +2,7 @@
 
 set -e
 
-if ! git remote show "upstream"; then
+if ! git remote show | grep "upstream" > /dev/null; then
     # git hg bridge: https://github.com/felipec/git-remote-hg
     git remote add "upstream" "hg::https://humungus.tedunangst.com/r/honk"
 fi
