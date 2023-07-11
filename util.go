@@ -56,6 +56,8 @@ var savedassetparams = make(map[string]string)
 
 var re_plainname = regexp.MustCompile("^[[:alnum:]_-]+$")
 
+var re_probablybcrypt = regexp.MustCompile("^\\$2[abxy]?\\$\\d{1,2}\\$[./A-Za-z0-9]+$")
+
 func getassetparam(file string) string {
 	if p, ok := savedassetparams[file]; ok {
 		return p
@@ -327,9 +329,14 @@ func createuser(db *sql.DB, r *bufio.Reader) error {
 	if err != nil {
 		return err
 	}
-	hash, err := bcrypt.GenerateFromPassword([]byte(pass), 12)
-	if err != nil {
-		return err
+	var hash []byte
+	if re_probablybcrypt.MatchString(pass) {
+		hash = []byte(pass)
+	} else {
+		hash, err = bcrypt.GenerateFromPassword([]byte(pass), 12)
+		if err != nil {
+			return err
+		}
 	}
 	k, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
