@@ -15,4 +15,4 @@ test:
 
 .PHONY: image
 image:
-	docker build -t "honk:dev" .
+	docker build --no-cache -t "honk:dev" .
