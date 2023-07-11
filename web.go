@@ -2723,8 +2723,8 @@ func serve() {
 	getters.HandleFunc("/misc.js", serveviewasset)
 	getters.HandleFunc("/local.css", servedataasset)
 	getters.HandleFunc("/local.js", servedataasset)
-	getters.HandleFunc("/icon.png", servedataasset)
-	getters.HandleFunc("/favicon.ico", servedataasset)
+	getters.HandleFunc("/icon.png", serveviewasset)
+	getters.HandleFunc("/favicon.ico", serveviewasset)
 
 	getters.HandleFunc("/about", servehtml)
 	getters.HandleFunc("/login", servehtml)
