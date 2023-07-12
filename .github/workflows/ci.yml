@@ -1,12 +1,14 @@
-name: publish
+name: ci
 on:
   push:
     branches:
       - master
+    tags:
+      - 'v*'
   schedule:
     - cron: '20 4 * * *'
 jobs:
-  main:
+  ci:
     runs-on: ubuntu-latest
     steps:
 
