@@ -103,7 +103,7 @@ docker run --rm                \
   -v "${PWD}/data:/data"       \
   -e "USER=admin"              \
   -e "PASS=${hash}"            \
-  -e "DOMAIN=honk.example.org" \
+  -e "ADDR=honk.example.org"   \
   "n0thub/honk:latest"
 ```
 
