@@ -1,6 +1,7 @@
 ## honk
 
-This is a fork!  
+This is a personal fork, nothing here is
+stable and anything can break at any time!  
 Original project: https://humungus.tedunangst.com/r/honk
 
 ### Features
@@ -39,7 +40,7 @@ the honk has the permission of the owner of that property.
 
 ### Build
 
-To build honk, you will need a go compiler version 1.20 or later. And libsqlite3.
+To build honk, you will need a go compiler version 1.20 or later.
 
 ```sh
 git clone https://github.com/nothub/honk.git
