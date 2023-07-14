@@ -38,6 +38,8 @@ import (
 //go:embed schema.sql
 var sqlSchema string
 
+const sqlDriver string = "sqlite"
+
 func userfromrow(row *sql.Row) (*WhatAbout, error) {
 	user := new(WhatAbout)
 	var seckey, options string

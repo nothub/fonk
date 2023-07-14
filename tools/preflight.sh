@@ -15,10 +15,4 @@ if test "$v" \< "go1.20"; then
     exit 1
 fi
 
-if test \! \( -e /usr/include/sqlite3.h -o -e /usr/local/include/sqlite3.h \); then
-    echo >&2 "Unable to find sqlite3.h header"
-    echo >&2 "Please install libsqlite3 dev package"
-    exit 1
-fi
-
 touch ".preflightcheck"

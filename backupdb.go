@@ -31,7 +31,7 @@ func svalbard(dirname string) {
 	}
 	now := time.Now().Unix()
 	backupdbname := fmt.Sprintf("%s/honk-%d.db", dirname, now)
-	backup, err := sql.Open("sqlite3", backupdbname)
+	backup, err := sql.Open(sqlDriver, backupdbname)
 	if err != nil {
 		elog.Fatalf("can't open backup database")
 	}
@@ -165,7 +165,7 @@ func svalbard(dirname string) {
 	backup.Close()
 
 	backupblobname := fmt.Sprintf("%s/blob-%d.db", dirname, now)
-	blob, err := sql.Open("sqlite3", backupblobname)
+	blob, err := sql.Open(sqlDriver, backupblobname)
 	if err != nil {
 		elog.Fatalf("can't open backup blob database")
 	}

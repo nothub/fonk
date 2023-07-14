@@ -1,11 +1,4 @@
-FROM golang:1.20-bookworm as builder
-
-RUN apt-get update -qy                           \
- && apt-get install -qy --no-install-recommends  \
-      libsqlite3-dev                             \
- && apt-get clean -qy                            \
- && apt-get autoremove -qy                       \
- && rm -rf /var/lib/apt/lists/*
+FROM golang:1.20 as builder
 
 COPY .  "/app/src"
 WORKDIR "/app/src"
@@ -17,7 +10,6 @@ FROM debian:bookworm
 
 RUN apt-get update -qy                           \
  && apt-get install -qy --no-install-recommends  \
-    libsqlite3-dev                               \
     tini                                         \
  && apt-get clean -qy                            \
  && apt-get autoremove -qy                       \

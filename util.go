@@ -47,9 +47,9 @@ import (
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
-	_ "humungus.tedunangst.com/r/go-sqlite3"
 	"humungus.tedunangst.com/r/webs/httpsig"
 	"humungus.tedunangst.com/r/webs/login"
+	_ "modernc.org/sqlite"
 )
 
 var savedassetparams = make(map[string]string)
@@ -83,7 +83,7 @@ func initdb() {
 	if err == nil {
 		elog.Fatalf("%s already exists", dbname)
 	}
-	db, err := sql.Open("sqlite3", dbname)
+	db, err := sql.Open(sqlDriver, dbname)
 	if err != nil {
 		elog.Fatal(err)
 	}
@@ -178,7 +178,7 @@ func initblobdb() {
 	if err == nil {
 		elog.Fatalf("%s already exists", blobdbname)
 	}
-	blobdb, err := sql.Open("sqlite3", blobdbname)
+	blobdb, err := sql.Open(sqlDriver, blobdbname)
 	if err != nil {
 		elog.Print(err)
 		return
@@ -390,7 +390,7 @@ func opendatabase() *sql.DB {
 	if err != nil {
 		elog.Fatalf("unable to open database: %s", err)
 	}
-	db, err := sql.Open("sqlite3", dbname)
+	db, err := sql.Open(sqlDriver, dbname)
 	if err != nil {
 		elog.Fatalf("unable to open database: %s", err)
 	}
@@ -408,7 +408,7 @@ func openblobdb() *sql.DB {
 	if err != nil {
 		elog.Fatalf("unable to open database: %s", err)
 	}
-	db, err := sql.Open("sqlite3", blobdbname)
+	db, err := sql.Open(sqlDriver, blobdbname)
 	if err != nil {
 		elog.Fatalf("unable to open database: %s", err)
 	}
