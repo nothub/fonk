@@ -2,7 +2,8 @@
 
 This is a personal fork, nothing here is
 stable and anything can break at any time!  
-Original project: https://humungus.tedunangst.com/r/honk
+You probably want to visit the original project instead:
+https://humungus.tedunangst.com/r/honk
 
 ### Features
 
