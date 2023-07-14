@@ -10,9 +10,9 @@ FROM alpine:3
 
 RUN apk add --no-cache ca-certificates tini
 
-COPY --from=builder "/app/src/views/"                    "/views/"
-COPY --from=builder "/app/src/honk"                      "/usr/local/bin/honk"
-COPY --from=builder "/app/src/entrypoint.sh"             "/usr/local/bin/entrypoint"
+COPY --from=builder "/app/src/entrypoint.sh"  "/usr/local/bin/entrypoint"
+COPY --from=builder "/app/src/honk"           "/usr/local/bin/honk"
+COPY --from=builder "/app/src/views/"         "/views/"
 
 WORKDIR "/var/empty"
 
