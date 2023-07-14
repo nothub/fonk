@@ -1,28 +1,38 @@
 package main
 
+/*
+#include <stdlib.h>
+#include <unistd.h>
+*/
+import "C"
+
 import (
 	"syscall"
 )
 
 func setUidGid(uid int, gid int) {
-	err := syscall.Setgroups([]int{})
-	if err != nil {
+	dlog.Printf("getuid() returned %s", syscall.Getuid())
+	dlog.Printf("getgid() returned %s", syscall.Getgid())
+
+	if err := syscall.Setgroups([]int{}); err != nil {
 		elog.Fatalf("setgroups() failure (%d)", err)
 	}
 
-	err = syscall.Setgid(gid)
-	if err != nil {
+	if err := syscall.Setgid(gid); err != nil {
 		elog.Fatalf("Setgid(%s) failure (%d)", gid, err)
 	}
 
-	err = syscall.Setuid(uid)
-	if err != nil {
+	if err := syscall.Setuid(uid); err != nil {
 		elog.Fatalf("Setuid(%s) failure (%d)", uid, err)
 	}
+
+	dlog.Printf("getuid() returned %s", syscall.Getuid())
+	dlog.Printf("getgid() returned %s", syscall.Getgid())
 }
 
 func init() {
 	preservehooks = append(preservehooks, func() {
-		setUidGid(10042, 10042)
+		// TODO: uid and gid flag
+		//setUidGid(10042, 10042)
 	})
 }
