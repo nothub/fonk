@@ -1,5 +1,5 @@
 honk: schema.sql $(shell ls go.mod go.sum *.go **/*.go)
-	go build -race -ldflags="-extldflags=-static" -tags netgo -o honk
+	go build -race -ldflags="-extldflags=-static" -tags netgo,timetzdata -o honk
 
 .PHONY: clean
 clean:
@@ -12,4 +12,4 @@ test:
 
 .PHONY: image
 image:
-	docker build --no-cache -t "honk:dev" .
+	docker build -t "honk:dev" .
