@@ -1,8 +1,5 @@
-honk: .preflightcheck schema.sql $(shell ls go.mod go.sum *.go **/*.go)
-	go build -race -o honk
-
-.preflightcheck: tools/preflight.sh
-	@sh ./tools/preflight.sh
+honk: schema.sql $(shell ls go.mod go.sum *.go **/*.go)
+	go build -race -ldflags="-extldflags=-static" -tags netgo -o honk
 
 .PHONY: clean
 clean:
