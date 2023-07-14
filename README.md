@@ -99,7 +99,6 @@ A password can be supplied in plaintext or as bcrypt hash.
 ```sh
 hash="$(htpasswd -nBC 12 "" | tr -d ':\n')"
 docker run --rm                \
-  -p "127.0.0.1:8080:8080"     \
   -v "${PWD}/data:/data"       \
   -e "USER=admin"              \
   -e "PASS=${hash}"            \
@@ -116,7 +115,6 @@ container.
 
 ```sh
 docker run --rm              \
-  -p "127.0.0.1:8080:8080"   \
   -v "${PWD}/data:/data"     \
   "n0thub/honk:latest"       \
   "upgrade"
@@ -127,9 +125,9 @@ docker run --rm              \
 ##### custom html views
 
 ```sh
-docker run --rm                                    \
-  -p "127.0.0.1:8080:8080"                         \
-  -v "${PWD}/data:/data"                           \
+docker run --rm               \
+  -p "127.0.0.1:8080:8080"    \
+  -v "${PWD}/data:/data"      \
   -v "${PWD}/views:/views:ro" \
   "n0thub/honk:latest"
 ```
