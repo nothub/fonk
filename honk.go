@@ -257,8 +257,8 @@ const (
 var serverName string
 var serverPrefix string
 var masqName string
-var dataDir = "."
-var viewDir = "."
+var dataDir = "./data"
+var viewDir = "./views"
 var iconName = "icon.png"
 var serverMsg template.HTML
 var aboutMsg template.HTML
@@ -299,6 +299,7 @@ func main() {
 	cmd := "run"
 	if len(args) > 0 {
 		cmd = args[0]
+		args = args[1:]
 	}
 	switch cmd {
 	case "init":
@@ -306,21 +307,23 @@ func main() {
 		var username string
 		var password string
 		var passwordHash string
-		var hostname string
+		var fqdn string
 		var listen string
 		flags.StringVar(&username, "username", "", "admin username")
 		flags.StringVar(&password, "password", "", "admin password")
 		flags.StringVar(&passwordHash, "password-hash", "", "admin password bcrypt hash")
-		flags.StringVar(&hostname, "servername", "", "server fqdn")
+		flags.StringVar(&fqdn, "fqdn", "", "server fqdn")
 		flags.StringVar(&listen, "listen", "0.0.0.0:8080", "listen address")
-		err := flags.Parse(flag.Args())
+		err := flags.Parse(args)
 		if err != nil {
 			elog.Fatalf("failed parsing flags: %s\n", err.Error())
 		}
+		args = flags.Args()
+
 		if password != "" && passwordHash != "" {
 			elog.Fatalln("password and password-hash flags are exclusive")
 		}
-		initdb(username, password, passwordHash, hostname, listen)
+		initdb(username, password, passwordHash, fqdn, listen)
 	case "upgrade":
 		upgradedb()
 	case "version":
