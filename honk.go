@@ -310,12 +310,15 @@ func main() {
 		var listen string
 		flags.StringVar(&username, "username", "", "admin username")
 		flags.StringVar(&password, "password", "", "admin password")
-		flags.StringVar(&passwordHash, "password hash", "", "admin password bcrypt hash")
+		flags.StringVar(&passwordHash, "password-hash", "", "admin password bcrypt hash")
 		flags.StringVar(&hostname, "servername", "", "server fqdn")
 		flags.StringVar(&listen, "listen", "0.0.0.0:8080", "listen address")
 		err := flags.Parse(flag.Args())
 		if err != nil {
 			elog.Fatalf("failed parsing flags: %s\n", err.Error())
+		}
+		if password != "" && passwordHash != "" {
+			elog.Fatalln("password and password-hash flags are exclusive")
 		}
 		initdb(username, password, passwordHash, hostname, listen)
 	case "upgrade":
