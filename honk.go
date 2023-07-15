@@ -286,6 +286,8 @@ var elog, ilog, dlog *golog.Logger
 func main() {
 	flag.StringVar(&dataDir, "datadir", dataDir, "data directory")
 	flag.StringVar(&viewDir, "viewdir", viewDir, "view directory")
+	flag.IntVar(&puid, "puid", puid, "process user id")
+	flag.IntVar(&pgid, "pgid", pgid, "process group id")
 	flag.Parse()
 
 	log.Init(log.Options{Progname: "honk", Facility: syslog.LOG_UUCP})

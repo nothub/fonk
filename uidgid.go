@@ -1,14 +1,11 @@
 package main
 
-/*
-#include <stdlib.h>
-#include <unistd.h>
-*/
-import "C"
-
 import (
 	"syscall"
 )
+
+var puid = -1
+var pgid = -1
 
 func setUidGid(uid int, gid int) {
 	dlog.Printf("getuid() returned %v", syscall.Getuid())
@@ -17,6 +14,8 @@ func setUidGid(uid int, gid int) {
 	if err := syscall.Setgroups([]int{}); err != nil {
 		elog.Fatalf("setgroups() failure (%d)", err)
 	}
+
+	// TODO: verify this also sets E and R ids
 
 	if err := syscall.Setgid(gid); err != nil {
 		elog.Fatalf("Setgid(%v) failure (%d)", gid, err)
@@ -32,7 +31,8 @@ func setUidGid(uid int, gid int) {
 
 func init() {
 	preservehooks = append(preservehooks, func() {
-		// TODO: uid and gid flag
-		//setUidGid(10042, 10042)
+		if puid > 0 && pgid > 0 {
+			setUidGid(puid, pgid)
+		}
 	})
 }
