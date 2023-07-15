@@ -1,4 +1,11 @@
 package flargs
 
-type CmdBuilder interface {
+type CmdBuilder struct {
+}
+
+type FlagBuilder struct {
+}
+
+func New() CmdBuilder {
+	return CmdBuilder{}
 }

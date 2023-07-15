@@ -4,4 +4,6 @@ package flargs
 
 func main() {
 
+	New()
+
 }

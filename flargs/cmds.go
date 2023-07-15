@@ -18,7 +18,7 @@ type Cmd struct {
 	Name string
 	Desc string
 
-	Flags []FlagMeta
+	Flags []flagMeta
 	Cmds  []Cmd
 	Args  []string
 
