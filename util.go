@@ -77,7 +77,7 @@ var dbtimeformat = "2006-01-02 15:04:05"
 var alreadyopendb *sql.DB
 var stmtConfig *sql.Stmt
 
-func initdb() {
+func initdb(username string, password string, hash string, hostname string, listen string) {
 	dbname := dataDir + "/honk.db"
 	_, err := os.Stat(dbname)
 	if err == nil {

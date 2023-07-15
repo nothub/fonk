@@ -302,7 +302,22 @@ func main() {
 	}
 	switch cmd {
 	case "init":
-		initdb()
+		flags := flag.NewFlagSet("init", flag.ExitOnError)
+		var username string
+		var password string
+		var passwordHash string
+		var hostname string
+		var listen string
+		flags.StringVar(&username, "username", "", "admin username")
+		flags.StringVar(&password, "password", "", "admin password")
+		flags.StringVar(&passwordHash, "password hash", "", "admin password bcrypt hash")
+		flags.StringVar(&hostname, "servername", "", "server fqdn")
+		flags.StringVar(&listen, "listen", "0.0.0.0:8080", "listen address")
+		err := flags.Parse(flag.Args())
+		if err != nil {
+			elog.Fatalf("failed parsing flags: %s\n", err.Error())
+		}
+		initdb(username, password, passwordHash, hostname, listen)
 	case "upgrade":
 		upgradedb()
 	case "version":
