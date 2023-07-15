@@ -303,6 +303,10 @@ func main() {
 	}
 	switch cmd {
 	case "init":
+		/*
+		   command syntax:
+		   init --username <name> ( --password <password> | --password-hash <bcrypt hash> ) --fqdn <fqnd> [ --listen <host:port> ]
+		*/
 		flags := flag.NewFlagSet("init", flag.ExitOnError)
 		var username string
 		var password string
