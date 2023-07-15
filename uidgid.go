@@ -11,23 +11,23 @@ import (
 )
 
 func setUidGid(uid int, gid int) {
-	dlog.Printf("getuid() returned %s", syscall.Getuid())
-	dlog.Printf("getgid() returned %s", syscall.Getgid())
+	dlog.Printf("getuid() returned %v", syscall.Getuid())
+	dlog.Printf("getgid() returned %v", syscall.Getgid())
 
 	if err := syscall.Setgroups([]int{}); err != nil {
 		elog.Fatalf("setgroups() failure (%d)", err)
 	}
 
 	if err := syscall.Setgid(gid); err != nil {
-		elog.Fatalf("Setgid(%s) failure (%d)", gid, err)
+		elog.Fatalf("Setgid(%v) failure (%d)", gid, err)
 	}
 
 	if err := syscall.Setuid(uid); err != nil {
-		elog.Fatalf("Setuid(%s) failure (%d)", uid, err)
+		elog.Fatalf("Setuid(%v) failure (%d)", uid, err)
 	}
 
-	dlog.Printf("getuid() returned %s", syscall.Getuid())
-	dlog.Printf("getgid() returned %s", syscall.Getgid())
+	dlog.Printf("getuid() returned %v", syscall.Getuid())
+	dlog.Printf("getgid() returned %v", syscall.Getgid())
 }
 
 func init() {
