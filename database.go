@@ -38,7 +38,7 @@ import (
 //go:embed schema.sql
 var sqlSchema string
 
-const sqlDriver string = "sqlite"
+const sqlDriver string = "sqlite3"
 
 func userfromrow(row *sql.Row) (*WhatAbout, error) {
 	user := new(WhatAbout)
