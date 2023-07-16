@@ -20,14 +20,14 @@ chown -R "honk:honk" "/data"
 
 if test ! -f "/data/honk.db"; then
     echo >&2 "honk.db is missing, doing init..."
-    if  test -z "${USER}"   ||
-        test -z "${PASS}"   ||
+    if  test -z "${USER}" ||
+        test -z "${PASS}" ||
         test -z "${ADDR}"; then
         echo >&2 "missing env var for db init!"
         exit 1
     fi
-    printf "%s\n%s\n%s\n%s\n" "${USER}" "${PASS}" "0.0.0.0:8080" "${ADDR}" | honk -datadir "/data" init
+    honk --datadir "/data" init --username "${USER}" --password "${PASS}" --fqdn "${ADDR}"
     exit 0
 fi
 
-honk -datadir "/data" -viewdir "/views" "$@"
+honk --datadir "/data" --viewdir "/views" "$@"

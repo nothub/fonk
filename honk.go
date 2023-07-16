@@ -305,7 +305,7 @@ func main() {
 		   command syntax:
 		   init --username <name> ( --password <password> | --password-hash <bcrypt hash> ) --fqdn <fqnd> [ --listen <host:port> ]
 		*/
-		flags := flag.NewFlagSet("init", flag.ExitOnError)
+		flags := flag.NewFlagSet(cmd, flag.ExitOnError)
 		var username string
 		var password string
 		var passwordHash string
@@ -321,7 +321,6 @@ func main() {
 			elog.Fatalf("failed parsing flags: %s\n", err.Error())
 		}
 		args = flags.Args()
-
 		if password != "" && passwordHash != "" {
 			elog.Fatalln("password and password-hash flags are exclusive")
 		}
@@ -385,7 +384,26 @@ func main() {
 		}
 		setconfig(args[1], val)
 	case "adduser":
-		adduser()
+		/*
+		   command syntax:
+		   init --username <name> ( --password <password> | --password-hash <bcrypt hash> )
+		*/
+		flags := flag.NewFlagSet(cmd, flag.ExitOnError)
+		var username string
+		var password string
+		var passwordHash string
+		flags.StringVar(&username, "username", "", "admin username")
+		flags.StringVar(&password, "password", "", "admin password")
+		flags.StringVar(&passwordHash, "password-hash", "", "admin password bcrypt hash")
+		err := flags.Parse(args)
+		if err != nil {
+			elog.Fatalf("failed parsing flags: %s\n", err.Error())
+		}
+		args = flags.Args()
+		if password != "" && passwordHash != "" {
+			elog.Fatalln("password and password-hash flags are exclusive")
+		}
+		adduser(username, password, passwordHash)
 	case "deluser":
 		if len(args) < 2 {
 			fmt.Printf("usage: honk deluser username\n")

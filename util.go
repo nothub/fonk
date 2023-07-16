@@ -56,8 +56,6 @@ var savedassetparams = make(map[string]string)
 
 var re_plainname = regexp.MustCompile("^[[:alnum:]_-]+$")
 
-var re_probablybcrypt = regexp.MustCompile("^\\$2[abxy]?\\$\\d{1,2}\\$[./A-Za-z0-9]+$")
-
 func getassetparam(file string) string {
 	if p, ok := savedassetparams[file]; ok {
 		return p
@@ -114,17 +112,17 @@ func initdb(username string, password string, hash string, hostname string, list
 			return
 		}
 	}
-	r := bufio.NewReader(os.Stdin)
 
 	initblobdb()
 
 	prepareStatements(db)
 
-	err = createuser(db, r)
+	err = createuser(db, username, password, hash)
 	if err != nil {
 		elog.Print(err)
 		return
 	}
+
 	// must came later or user above will have negative id
 	err = createserveruser(db)
 	if err != nil {
@@ -132,30 +130,20 @@ func initdb(username string, password string, hash string, hostname string, list
 		return
 	}
 
-	fmt.Printf("listen address: ")
-	addr, err := r.ReadString('\n')
-	if err != nil {
-		elog.Print(err)
-		return
-	}
-	addr = addr[:len(addr)-1]
-	if len(addr) < 1 {
+	// TODO: better validation
+	if len(hostname) < 1 {
 		elog.Print("that's way too short")
 		return
 	}
-	setconfig("listenaddr", addr)
-	fmt.Printf("server name: ")
-	addr, err = r.ReadString('\n')
-	if err != nil {
-		elog.Print(err)
-		return
-	}
-	addr = addr[:len(addr)-1]
-	if len(addr) < 1 {
+	setconfig("servername", hostname)
+
+	// TODO: better validation
+	if len(listen) < 1 {
 		elog.Print("that's way too short")
 		return
 	}
-	setconfig("servername", addr)
+	setconfig("listenaddr", listen)
+
 	var randbytes [16]byte
 	rand.Read(randbytes[:])
 	key := fmt.Sprintf("%x", randbytes)
@@ -206,7 +194,7 @@ func initblobdb() {
 	blobdb.Close()
 }
 
-func adduser() {
+func adduser(username string, password string, hash string) {
 	db := opendatabase()
 	defer func() {
 		os.Exit(1)
@@ -220,9 +208,7 @@ func adduser() {
 		os.Exit(1)
 	}()
 
-	r := bufio.NewReader(os.Stdin)
-
-	err := createuser(db, r)
+	err := createuser(db, username, password, hash)
 	if err != nil {
 		elog.Print(err)
 		return
@@ -309,12 +295,7 @@ func askpassword(r *bufio.Reader) (string, error) {
 	return pass, nil
 }
 
-func createuser(db *sql.DB, r *bufio.Reader) error {
-	fmt.Printf("username: ")
-	name, err := r.ReadString('\n')
-	if err != nil {
-		return err
-	}
+func createuser(db *sql.DB, name string, pass string, hash string) error {
 	name = name[:len(name)-1]
 	if len(name) < 1 {
 		return fmt.Errorf("that's way too short")
@@ -325,19 +306,23 @@ func createuser(db *sql.DB, r *bufio.Reader) error {
 	if _, err := butwhatabout(name); err == nil {
 		return fmt.Errorf("user already exists")
 	}
-	pass, err := askpassword(r)
-	if err != nil {
-		return err
+
+	if len(pass) == 0 && len(hash) == 0 {
+		return fmt.Errorf("either password or hash must be supplied")
 	}
-	var hash []byte
-	if re_probablybcrypt.MatchString(pass) {
-		hash = []byte(pass)
-	} else {
-		hash, err = bcrypt.GenerateFromPassword([]byte(pass), 12)
+	if len(pass) > 0 {
+		b, err := bcrypt.GenerateFromPassword([]byte(pass), 12)
 		if err != nil {
 			return err
 		}
+		hash = string(b)
 	}
+
+	// validate hash
+	if _, err := bcrypt.Cost([]byte(hash)); err != nil {
+		return fmt.Errorf("invalid bcrypt hash")
+	}
+
 	k, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return err
