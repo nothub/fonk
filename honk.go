@@ -285,14 +285,14 @@ func reexecArgs(cmd string) []string {
 var elog, ilog, dlog *golog.Logger
 
 func main() {
-	flag.StringVar(&dataDir, "datadir", dataDir, "data directory")
-	flag.StringVar(&viewDir, "viewdir", viewDir, "view directory")
-	flag.Parse()
-
 	log.Init(log.Options{Progname: "honk", Facility: syslog.LOG_UUCP})
 	elog = log.E
 	ilog = log.I
 	dlog = log.D
+
+	flag.StringVar(&dataDir, "datadir", dataDir, "data directory")
+	flag.StringVar(&viewDir, "viewdir", viewDir, "view directory")
+	flag.Parse()
 
 	args := flag.Args()
 	cmd := "run"
@@ -300,6 +300,7 @@ func main() {
 		cmd = args[0]
 		args = args[1:]
 	}
+
 	switch cmd {
 	case "genhash":
 		os.Stderr.WriteString("This command generates bcrypt hashes for use with the init command.\n")
@@ -315,35 +316,31 @@ func main() {
 		}
 		os.Stderr.WriteString("For a flag option, copy the following line:\n")
 		os.Stderr.WriteString("--hash \"" + strings.ReplaceAll(string(hash), "$", "\\$") + "\"\n")
-
 		fmt.Println(string(hash))
 		os.Exit(0)
 	case "init":
-		/*
-		   command syntax:
-		   init --username <name> --hash <hash> --fqdn <fqdn> [ --listen <host:port> ]
-		*/
 		flags := flag.NewFlagSet(cmd, flag.ExitOnError)
-		var username string
 		var hash string
-		var fqdn string
 		var listen string
-		flags.StringVar(&username, "username", "", "admin username")
-		flags.StringVar(&hash, "hash", "", "admin password hash (bcrypt)")
-		flags.StringVar(&fqdn, "fqdn", "", "server fqdn")
+		flags.StringVar(&hash, "hash", "", "password hash (bcrypt)")
 		flags.StringVar(&listen, "listen", "0.0.0.0:8080", "listen address")
 		err := flags.Parse(args)
 		if err != nil {
 			elog.Fatalf("failed parsing flags: %s\n", err.Error())
 		}
 		args = flags.Args()
-		initdb(username, hash, fqdn, listen)
+		if len(args) < 2 {
+			fmt.Printf("usage: init [--hash <hash>] [--listen <host:port>] <username> <fqdn>\n")
+			return
+		}
+		initdb(args[0], hash, args[1], listen)
 	case "upgrade":
 		upgradedb()
 	case "version":
 		fmt.Println(softwareVersion)
 		os.Exit(0)
 	}
+
 	db := opendatabase()
 	dbversion := 0
 	getconfig("dbversion", &dbversion)
@@ -366,93 +363,92 @@ func main() {
 	getconfig("slowtimeout", &slowTimeout)
 	getconfig("signgets", &signGets)
 	prepareStatements(db)
+
 	switch cmd {
 	case "admin":
 		adminscreen()
 	case "import":
-		if len(args) != 4 {
-			elog.Fatal("import username mastodon|twitter srcdir")
+		if len(args) != 3 {
+			elog.Fatal("usage: import <username> (mastodon|twitter) <srcdir>\n")
 		}
-		importMain(args[1], args[2], args[3])
+		importMain(args[0], args[1], args[2])
 	case "devel":
-		if len(args) != 2 {
-			elog.Fatal("need an argument: devel (on|off)")
+		if len(args) != 1 {
+			elog.Fatal("usage: devel (on|off)")
 		}
-		switch args[1] {
+		switch args[0] {
 		case "on":
 			setconfig("devel", 1)
 		case "off":
 			setconfig("devel", 0)
 		default:
-			elog.Fatal("argument must be on or off")
+			elog.Fatal("usage: devel (on|off)")
 		}
 	case "setconfig":
-		if len(args) != 3 {
-			elog.Fatal("need an argument: setconfig key val")
+		if len(args) != 2 {
+			elog.Fatal("usage: setconfig <key> <val>\n")
 		}
 		var val interface{}
 		var err error
-		if val, err = strconv.Atoi(args[2]); err != nil {
-			val = args[2]
+		if val, err = strconv.Atoi(args[1]); err != nil {
+			val = args[1]
 		}
-		setconfig(args[1], val)
+		setconfig(args[0], val)
 	case "adduser":
-		/*
-		   command syntax:
-		   init --username <name> --hash <hash>
-		*/
 		flags := flag.NewFlagSet(cmd, flag.ExitOnError)
-		var username string
 		var hash string
-		flags.StringVar(&username, "username", "", "admin username")
-		flags.StringVar(&hash, "hash", "", "admin password hash (bcrypt)")
+		flags.StringVar(&hash, "hash", "", "password hash (bcrypt)")
 		err := flags.Parse(args)
 		if err != nil {
 			elog.Fatalf("failed parsing flags: %s\n", err.Error())
 		}
 		args = flags.Args()
-		adduser(username, hash)
+		if len(args) < 1 {
+			fmt.Printf("usage: honk init [--hash <hash>] <username>\n")
+			return
+		}
+		adduser(args[0], hash)
 	case "deluser":
-		if len(args) < 2 {
-			fmt.Printf("usage: honk deluser username\n")
+		if len(args) < 1 {
+			fmt.Printf("usage: honk deluser <username>\n")
 			return
 		}
-		deluser(args[1])
+		deluser(args[0])
 	case "chpass":
-		if len(args) < 2 {
-			fmt.Printf("usage: honk chpass username\n")
+		if len(args) < 1 {
+			fmt.Printf("usage: honk chpass <username>\n")
 			return
 		}
-		chpass(args[1])
+		chpass(args[0])
 	case "follow":
-		if len(args) < 3 {
-			fmt.Printf("usage: honk follow username url\n")
+		if len(args) < 2 {
+			fmt.Printf("usage: honk follow <username> <url>\n")
 			return
 		}
-		user, err := butwhatabout(args[1])
+		user, err := butwhatabout(args[0])
 		if err != nil {
 			fmt.Printf("user not found\n")
 			return
 		}
 		var meta HonkerMeta
 		mj, _ := jsonify(&meta)
-		honkerid, err := savehonker(user, args[2], "", "presub", "", mj)
+		honkerid, err := savehonker(user, args[1], "", "presub", "", mj)
 		if err != nil {
 			fmt.Printf("had some trouble with that: %s\n", err)
 			return
 		}
 		followyou(user, honkerid, true)
 	case "unfollow":
-		if len(args) < 3 {
+		if len(args) < 2 {
 			fmt.Printf("usage: honk unfollow username url\n")
 			return
 		}
-		user, err := butwhatabout(args[1])
+		user, err := butwhatabout(args[0])
 		if err != nil {
 			fmt.Printf("user not found\n")
 			return
 		}
-		row := db.QueryRow("select honkerid from honkers where xid = ? and userid = ? and flavor in ('sub')", args[2], user.ID)
+		row := db.QueryRow("select honkerid from honkers where xid = ? and userid = ? and flavor in ('sub')", args[1], user.ID)
 		var honkerid int64
 		err = row.Scan(&honkerid)
 		if err != nil {
@@ -467,26 +463,26 @@ func main() {
 		}
 		cleanupdb(arg)
 	case "unplug":
-		if len(args) < 2 {
-			fmt.Printf("usage: honk unplug servername\n")
+		if len(args) < 1 {
+			fmt.Printf("usage: honk unplug <servername>\n")
 			return
 		}
-		name := args[1]
+		name := args[0]
 		unplugserver(name)
 	case "backup":
-		if len(args) < 2 {
-			fmt.Printf("usage: honk backup dirname\n")
+		if len(args) < 1 {
+			fmt.Printf("usage: honk backup <dirname>\n")
 			return
 		}
-		name := args[1]
+		name := args[0]
 		svalbard(name)
 	case "ping":
-		if len(args) < 3 {
+		if len(args) < 2 {
 			fmt.Printf("usage: honk ping (from username) (to username or url)\n")
 			return
 		}
-		name := args[1]
-		targ := args[2]
+		name := args[0]
+		targ := args[1]
 		user, err := butwhatabout(name)
 		if err != nil {
 			elog.Printf("unknown user")
