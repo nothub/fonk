@@ -10,6 +10,7 @@ honk: schema.sql $(shell ls go.mod go.sum *.go **/*.go)
 .PHONY: clean
 clean:
 	go clean
+	docker rm -f "honk:dev"
 
 .PHONY: test
 test:
