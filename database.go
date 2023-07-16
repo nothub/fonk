@@ -33,6 +33,8 @@ import (
 	"humungus.tedunangst.com/r/webs/httpsig"
 	"humungus.tedunangst.com/r/webs/login"
 	"humungus.tedunangst.com/r/webs/mz"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 //go:embed schema.sql
