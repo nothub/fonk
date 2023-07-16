@@ -9,10 +9,12 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.17
 	golang.org/x/crypto v0.11.0
 	golang.org/x/net v0.12.0
+	golang.org/x/term v0.10.0
 	humungus.tedunangst.com/r/webs v0.6.62
 )
 
 require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	golang.org/x/image v0.0.0-20220413100746-70e8d0d3baa9 // indirect
+	golang.org/x/sys v0.10.0 // indirect
 )

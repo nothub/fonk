@@ -15,36 +15,20 @@
 
 package main
 
-/*
-#include <termios.h>
-
-void
-termecho(int on)
-{
-	struct termios t;
-	tcgetattr(1, &t);
-	if (on)
-		t.c_lflag |= ECHO;
-	else
-		t.c_lflag &= ~ECHO;
-	tcsetattr(1, TCSADRAIN, &t);
-}
-*/
-import "C"
-
 import (
-	"bufio"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha512"
 	"database/sql"
 	"fmt"
+	"golang.org/x/term"
 	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
 	"regexp"
 	"strings"
+	"syscall"
 
 	"golang.org/x/crypto/bcrypt"
 	"humungus.tedunangst.com/r/webs/httpsig"
@@ -74,7 +58,7 @@ var dbtimeformat = "2006-01-02 15:04:05"
 var alreadyopendb *sql.DB
 var stmtConfig *sql.Stmt
 
-func initdb(username string, password string, hash string, hostname string, listen string) {
+func initdb(username string, hash string, hostname string, listen string) {
 	dbname := dataDir + "/honk.db"
 	_, err := os.Stat(dbname)
 	if err == nil {
@@ -93,8 +77,6 @@ func initdb(username string, password string, hash string, hostname string, list
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		<-c
-		C.termecho(1)
-		fmt.Printf("\n")
 		os.Remove(dbname)
 		os.Exit(1)
 	}()
@@ -116,10 +98,9 @@ func initdb(username string, password string, hash string, hostname string, list
 
 	prepareStatements(db)
 
-	err = createuser(db, username, password, hash)
+	err = createuser(db, username, hash)
 	if err != nil {
-		elog.Print(err)
-		return
+		elog.Fatalf("error: %s\n", err.Error())
 	}
 
 	// must came later or user above will have negative id
@@ -193,26 +174,12 @@ func initblobdb() {
 	blobdb.Close()
 }
 
-func adduser(username string, password string, hash string) {
+func adduser(username string, hash string) {
 	db := opendatabase()
-	defer func() {
-		os.Exit(1)
-	}()
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() {
-		<-c
-		C.termecho(1)
-		fmt.Printf("\n")
-		os.Exit(1)
-	}()
-
-	err := createuser(db, username, password, hash)
+	err := createuser(db, username, hash)
 	if err != nil {
-		elog.Print(err)
-		return
+		elog.Fatalf("error: %s\n", err.Error())
 	}
-
 	os.Exit(0)
 }
 
@@ -245,57 +212,52 @@ func deluser(username string) {
 func chpass(username string) {
 	user, err := butwhatabout(username)
 	if err != nil {
-		elog.Fatal(err)
+		elog.Fatalf("error: %s\n", err.Error())
 	}
-	defer func() {
-		os.Exit(1)
-	}()
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() {
-		<-c
-		C.termecho(1)
-		fmt.Printf("\n")
-		os.Exit(1)
-	}()
+
+	pass, err := askpassword()
+	if err != nil {
+		elog.Fatalf("error: %s\n", err.Error())
+	}
 
 	db := opendatabase()
 	login.Init(login.InitArgs{Db: db, Logger: ilog})
 
-	r := bufio.NewReader(os.Stdin)
-
-	pass, err := askpassword(r)
-	if err != nil {
-		elog.Print(err)
-		return
-	}
 	err = login.SetPassword(user.ID, pass)
 	if err != nil {
-		elog.Print(err)
-		return
+		elog.Fatalf("error: %s\n", err.Error())
 	}
+
 	fmt.Printf("done\n")
 	os.Exit(0)
 }
 
-func askpassword(r *bufio.Reader) (string, error) {
-	C.termecho(0)
-	fmt.Printf("password: ")
-	pass, err := r.ReadString('\n')
-	C.termecho(1)
-	fmt.Printf("\n")
+func askpassword() (string, error) {
+	os.Stderr.WriteString("enter password: ")
+	pass, err := term.ReadPassword(syscall.Stdin)
+	os.Stderr.WriteString("\n")
 	if err != nil {
 		return "", err
 	}
-	pass = pass[:len(pass)-1]
-	if len(pass) < 6 {
+
+	os.Stderr.WriteString("enter again: ")
+	repeat, err := term.ReadPassword(syscall.Stdin)
+	os.Stderr.WriteString("\n")
+	if err != nil {
+		return "", err
+	}
+
+	if string(pass) != string(repeat) {
+		return "", fmt.Errorf("inputs were not the same")
+	}
+	if len(pass) < 8 {
 		return "", fmt.Errorf("that's way too short")
 	}
-	return pass, nil
+
+	return string(pass), nil
 }
 
-func createuser(db *sql.DB, name string, pass string, hash string) error {
-	name = name[:len(name)-1]
+func createuser(db *sql.DB, name string, hash string) error {
 	if len(name) < 1 {
 		return fmt.Errorf("that's way too short")
 	}
@@ -306,10 +268,11 @@ func createuser(db *sql.DB, name string, pass string, hash string) error {
 		return fmt.Errorf("user already exists")
 	}
 
-	if len(pass) == 0 && len(hash) == 0 {
-		return fmt.Errorf("either password or hash must be supplied")
-	}
-	if len(pass) > 0 {
+	if len(hash) == 0 {
+		pass, err := askpassword()
+		if err != nil {
+			elog.Fatalf("error: %s\n", err.Error())
+		}
 		b, err := bcrypt.GenerateFromPassword([]byte(pass), 12)
 		if err != nil {
 			return err
@@ -339,6 +302,7 @@ func createuser(db *sql.DB, name string, pass string, hash string) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 

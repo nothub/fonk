@@ -96,16 +96,20 @@ docker run --rm            \
 ##### initial database setup
 
 The database will be initialized if not found.  
-A password can be supplied in plaintext or as bcrypt hash.
+A password can be supplied interactive or by flag as bcrypt hash.
 
 ```sh
-hash="$(htpasswd -nBC 12 "" | tr -d ':\n')"
-docker run --rm                \
+hash=""
+# generate crypt hash:
+# hash="$(./honk genhash)"
+# hash="$(htpasswd -nBC 12 "" | tr -d ':\n')"
+docker run -it --rm            \
   -v "${PWD}/data:/data"       \
-  -e "USER=admin"              \
-  -e "PASS=${hash}"            \
-  -e "ADDR=honk.example.org"   \
-  "n0thub/honk:latest"
+  "n0thub/honk:latest"         \
+    init                       \
+    --username "admin"         \
+    --hash "${hash}"           \
+    --fqdn "honk.example.org"
 ```
 
 ---

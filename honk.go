@@ -18,6 +18,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"golang.org/x/crypto/bcrypt"
 	"html/template"
 	golog "log"
 	"log/syslog"
@@ -300,20 +301,35 @@ func main() {
 		args = args[1:]
 	}
 	switch cmd {
+	case "genhash":
+		os.Stderr.WriteString("This command generates bcrypt hashes for use with the init command.\n")
+		os.Stderr.WriteString("To store the hash string output to a shell variable, do this:\n")
+		os.Stderr.WriteString("hash=\"$(./honk genhash)\"\n")
+		pass, err := askpassword()
+		if err != nil {
+			elog.Fatalf("error: %s\n", err.Error())
+		}
+		hash, err := bcrypt.GenerateFromPassword([]byte(pass), 12)
+		if err != nil {
+			elog.Fatalf("error: %s\n", err.Error())
+		}
+		os.Stderr.WriteString("For a flag option, copy the following line:\n")
+		os.Stderr.WriteString("--hash \"" + strings.ReplaceAll(string(hash), "$", "\\$") + "\"\n")
+
+		fmt.Println(string(hash))
+		os.Exit(0)
 	case "init":
 		/*
 		   command syntax:
-		   init --username <name> ( --password <password> | --password-hash <bcrypt hash> ) --fqdn <fqnd> [ --listen <host:port> ]
+		   init --username <name> --hash <hash> --fqdn <fqdn> [ --listen <host:port> ]
 		*/
 		flags := flag.NewFlagSet(cmd, flag.ExitOnError)
 		var username string
-		var password string
-		var passwordHash string
+		var hash string
 		var fqdn string
 		var listen string
 		flags.StringVar(&username, "username", "", "admin username")
-		flags.StringVar(&password, "password", "", "admin password")
-		flags.StringVar(&passwordHash, "password-hash", "", "admin password bcrypt hash")
+		flags.StringVar(&hash, "hash", "", "admin password hash (bcrypt)")
 		flags.StringVar(&fqdn, "fqdn", "", "server fqdn")
 		flags.StringVar(&listen, "listen", "0.0.0.0:8080", "listen address")
 		err := flags.Parse(args)
@@ -321,10 +337,7 @@ func main() {
 			elog.Fatalf("failed parsing flags: %s\n", err.Error())
 		}
 		args = flags.Args()
-		if password != "" && passwordHash != "" {
-			elog.Fatalln("password and password-hash flags are exclusive")
-		}
-		initdb(username, password, passwordHash, fqdn, listen)
+		initdb(username, hash, fqdn, listen)
 	case "upgrade":
 		upgradedb()
 	case "version":
@@ -386,24 +399,19 @@ func main() {
 	case "adduser":
 		/*
 		   command syntax:
-		   init --username <name> ( --password <password> | --password-hash <bcrypt hash> )
+		   init --username <name> --hash <hash>
 		*/
 		flags := flag.NewFlagSet(cmd, flag.ExitOnError)
 		var username string
-		var password string
-		var passwordHash string
+		var hash string
 		flags.StringVar(&username, "username", "", "admin username")
-		flags.StringVar(&password, "password", "", "admin password")
-		flags.StringVar(&passwordHash, "password-hash", "", "admin password bcrypt hash")
+		flags.StringVar(&hash, "hash", "", "admin password hash (bcrypt)")
 		err := flags.Parse(args)
 		if err != nil {
 			elog.Fatalf("failed parsing flags: %s\n", err.Error())
 		}
 		args = flags.Args()
-		if password != "" && passwordHash != "" {
-			elog.Fatalln("password and password-hash flags are exclusive")
-		}
-		adduser(username, password, passwordHash)
+		adduser(username, hash)
 	case "deluser":
 		if len(args) < 2 {
 			fmt.Printf("usage: honk deluser username\n")

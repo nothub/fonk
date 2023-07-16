@@ -16,10 +16,6 @@ COPY --from=builder "/app/src/views/"         "/views/"
 
 WORKDIR "/var/empty"
 
-ENV USER=""
-ENV PASS=""
-ENV ADDR=""
-
 ENV PUID=1000
 ENV PGID=1000
 

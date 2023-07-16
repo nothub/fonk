@@ -10,7 +10,7 @@ honk: schema.sql $(shell ls go.mod go.sum *.go **/*.go)
 .PHONY: clean
 clean:
 	go clean
-	docker rm -f "honk:dev"
+	$(shell docker rm -f "n0thub/honk:latest" 2> /dev/null)
 
 .PHONY: test
 test:
@@ -19,4 +19,4 @@ test:
 
 .PHONY: image
 image:
-	docker build -t "honk:dev" .
+	docker build -t "n0thub/honk:latest" .
