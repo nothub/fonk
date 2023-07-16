@@ -66,7 +66,7 @@ func reverbolate(userid int64, honks []*Honk) {
 	somenumberedusers.Get(userid, &user)
 	for _, h := range honks {
 		h.What += "ed"
-		if h.What == "tonked" {
+		if h.What == "honked" && h.RID != "" {
 			h.What = "honked back"
 			h.Style += " subtle"
 		}
@@ -694,13 +694,9 @@ func savingthrow(keyname string) {
 }
 
 func keymatch(keyname string, actor string) string {
-	hash := strings.IndexByte(keyname, '#')
-	if hash == -1 {
-		hash = len(keyname)
-	}
-	owner := keyname[0:hash]
-	if owner == actor {
-		return originate(actor)
+	origin := originate(actor)
+	if origin == originate(keyname) {
+		return origin
 	}
 	return ""
 }
