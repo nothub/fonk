@@ -77,7 +77,7 @@ old-honk backup "$(date +backup-%F)"
 ### Docker
 
 honk is available packaged as a
-[Docker image](https://hub.docker.com/r/n0thub/honk).
+[Docker image](https://hub.docker.com/r/n0thub/fonk).
 
 <details>
   <summary>Usage examples</summary>
@@ -88,7 +88,7 @@ honk is available packaged as a
 docker run --rm            \
   -p "127.0.0.1:8080:8080" \
   -v "${PWD}/data:/data"   \
-  "n0thub/honk:latest"
+  "n0thub/fonk:latest"
 ```
 
 ---
@@ -105,7 +105,7 @@ hash=""
 # hash="$(htpasswd -nBC 12 "" | tr -d ':\n')"
 docker run -it --rm            \
   -v "${PWD}/data:/data"       \
-  "n0thub/honk:latest"         \
+  "n0thub/fonk:latest"         \
     init                       \
     --username "admin"         \
     --hash "${hash}"           \
@@ -122,7 +122,7 @@ container.
 ```sh
 docker run --rm              \
   -v "${PWD}/data:/data"     \
-  "n0thub/honk:latest"       \
+  "n0thub/fonk:latest"       \
   "upgrade"
 ```
 
@@ -135,7 +135,7 @@ docker run --rm               \
   -p "127.0.0.1:8080:8080"    \
   -v "${PWD}/data:/data"      \
   -v "${PWD}/views:/views:ro" \
-  "n0thub/honk:latest"
+  "n0thub/fonk:latest"
 ```
 
 ---
@@ -148,7 +148,7 @@ docker run --rm            \
   -v "${PWD}/data:/data"   \
   -e "PUID=9001"           \
   -e "PGID=9002"           \
-  "n0thub/honk:latest"
+  "n0thub/fonk:latest"
 ```
 
 </details>
