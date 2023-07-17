@@ -131,7 +131,7 @@ func initdb(username string, hash string, hostname string, listen string) {
 	setconfig("dbversion", myVersion)
 
 	setconfig("servermsg", "<h2>Things happen.</h2>")
-	setconfig("aboutmsg", "<h3>What is honk?</h3><p>Honk is amazing!")
+	setconfig("aboutmsg", "<h3>What is honk?</h3><p>Honk is amazing!</p>")
 	setconfig("loginmsg", "<h2>login</h2>")
 	setconfig("devel", 0)
 
