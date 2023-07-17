@@ -21,9 +21,6 @@ jobs:
       - name: 'Run tests'
         run: make test
 
-      - name: 'Grab version'
-        run: echo "VERSION=$(git describe --tags)" >> $GITHUB_ENV
-
       - name: 'Docker Hub login'
         uses: docker/login-action@v2
         with:
@@ -37,7 +34,6 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/honk:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/honk:${{ env.VERSION }}
 
       - name: 'Trigger deployment'
         run: >
