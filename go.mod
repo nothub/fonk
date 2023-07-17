@@ -1,4 +1,4 @@
-module github.com/nothub/honk
+module github.com/nothub/fonk
 
 go 1.20
 

@@ -1,6 +1,6 @@
-## honk
+## fonk
 
-This is a personal fork, nothing here is
+This is a personal fork of honk, nothing here is
 stable and anything can break at any time!  
 You probably want to visit the original project instead:
 https://humungus.tedunangst.com/r/honk

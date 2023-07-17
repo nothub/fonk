@@ -33,7 +33,7 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/honk:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/fonk:latest
 
       - name: 'Trigger deployment'
         run: >
