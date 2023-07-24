@@ -10,7 +10,7 @@ require (
 	golang.org/x/crypto v0.11.0
 	golang.org/x/net v0.12.0
 	golang.org/x/term v0.10.0
-	humungus.tedunangst.com/r/webs v0.6.62
+	humungus.tedunangst.com/r/webs v0.6.65
 )
 
 require (
