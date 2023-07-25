@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/andybalholm/cascadia v1.3.2
 	github.com/gorilla/mux v1.8.0
-	github.com/mattn/go-runewidth v0.0.14
+	github.com/mattn/go-runewidth v0.0.15
 	github.com/mattn/go-sqlite3 v1.14.17
 	golang.org/x/crypto v0.11.0
 	golang.org/x/net v0.12.0
