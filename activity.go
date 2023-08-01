@@ -132,64 +132,31 @@ var flightdeck = gate.NewSerializer()
 
 var signGets = true
 
-func junkGet(userid int64, url string, args junk.GetArgs) (junk.Junk, error) {
+func GetJunkTimeout(userid int64, url string, timeout time.Duration) (junk.Junk, error) {
 	client := http.DefaultClient
-	if args.Client != nil {
-		client = args.Client
-	}
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	if args.Accept != "" {
-		req.Header.Set("Accept", args.Accept)
-	}
-	if args.Agent != "" {
-		req.Header.Set("User-Agent", args.Agent)
-	}
-	if signGets {
+	sign := func(req *http.Request) error {
 		var ki *KeyInfo
 		ok := ziggies.Get(userid, &ki)
 		if ok {
 			httpsig.SignRequest(ki.keyname, ki.seckey, req, nil)
 		}
+		return nil
 	}
-	if args.Timeout != 0 {
-		ctx, cancel := context.WithTimeout(context.Background(), args.Timeout)
-		defer cancel()
-		req = req.WithContext(ctx)
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	switch resp.StatusCode {
-	case 200:
-	case 201:
-	case 202:
-	default:
-		return nil, fmt.Errorf("http get status: %d", resp.StatusCode)
-	}
-	return junk.Read(resp.Body)
-}
-
-func GetJunkTimeout(userid int64, url string, timeout time.Duration) (junk.Junk, error) {
-	client := http.DefaultClient
 	if develMode {
 		client = develClient
+		sign = nil
 	}
 	fn := func() (interface{}, error) {
 		at := thefakename
 		if strings.Contains(url, ".well-known/webfinger?resource") {
 			at = "application/jrd+json"
 		}
-		j, err := junkGet(userid, url, junk.GetArgs{
+		j, err := junk.Get(url, junk.GetArgs{
 			Accept:  at,
 			Agent:   "honksnonk/5.0; " + serverName,
 			Timeout: timeout,
 			Client:  client,
+			Fixup:   sign,
 		})
 		return j, err
 	}
@@ -348,10 +315,10 @@ func eradicatexonk(userid int64, xid string) {
 	xonk := getxonk(userid, xid)
 	if xonk != nil {
 		deletehonk(xonk.ID)
-	}
-	_, err := stmtSaveZonker.Exec(userid, xid, "zonk")
-	if err != nil {
-		elog.Printf("error eradicating: %s", err)
+		_, err := stmtSaveZonker.Exec(userid, xid, "zonk")
+		if err != nil {
+			elog.Printf("error eradicating: %s", err)
+		}
 	}
 }
 
@@ -468,19 +435,12 @@ func newphone(a []string, obj junk.Junk) []string {
 }
 
 func extractattrto(obj junk.Junk) string {
-	who, _ := obj.GetString("attributedTo")
-	if who != "" {
-		return who
-	}
-	o, ok := obj.GetMap("attributedTo")
-	if ok {
-		id, ok := o.GetString("id")
-		if ok {
-			return id
-		}
-	}
-	arr, _ := obj.GetArray("attributedTo")
+	arr := oneforall(obj, "attributedTo")
 	for _, a := range arr {
+		s, ok := a.(string)
+		if ok {
+			return s
+		}
 		o, ok := a.(junk.Junk)
 		if ok {
 			t, _ := o.GetString("type")
@@ -489,12 +449,19 @@ func extractattrto(obj junk.Junk) string {
 				return id
 			}
 		}
-		s, ok := a.(string)
-		if ok {
-			return s
-		}
 	}
 	return ""
+}
+
+func oneforall(obj junk.Junk, key string) []interface{} {
+	if val, ok := obj.GetMap(key); ok {
+		return []interface{}{val}
+	}
+	if str, ok := obj.GetString(key); ok {
+		return []interface{}{str}
+	}
+	arr, _ := obj.GetArray(key)
+	return arr
 }
 
 func firstofmany(obj junk.Junk, key string) string {
@@ -631,12 +598,16 @@ func xonksaver(user *WhatAbout, item junk.Junk, origin string) *Honk {
 		case "Announce":
 			obj, ok = item.GetMap("object")
 			if ok {
+				// at some point we should just recurse
 				what, ok := obj.GetString("type")
-				if ok && what == "Create" {
+				if ok && (what == "Create" || what == "Update") {
 					obj, ok = obj.GetMap("object")
 					if !ok {
-						ilog.Printf("lost object inside create %s", id)
+						ilog.Printf("lost object inside announce %s", id)
 						return nil
+					}
+					if what == "Update" {
+						isUpdate = true
 					}
 					what, _ = obj.GetString("type")
 				}
@@ -954,7 +925,7 @@ func xonksaver(user *WhatAbout, item junk.Junk, origin string) *Honk {
 				}
 			}
 			if !preferorig {
-				atts, _ := obj.GetArray("attachment")
+				atts := oneforall(obj, "attachment")
 				for _, atti := range atts {
 					att, ok := atti.(junk.Junk)
 					if !ok {
@@ -963,16 +934,8 @@ func xonksaver(user *WhatAbout, item junk.Junk, origin string) *Honk {
 					}
 					procatt(att)
 				}
-				if att, ok := obj.GetMap("attachment"); ok {
-					procatt(att)
-				}
 			}
-			tags, _ := obj.GetArray("tag")
-			for _, tagi := range tags {
-				tag, ok := tagi.(junk.Junk)
-				if !ok {
-					continue
-				}
+			proctag := func(tag junk.Junk) {
 				tt, _ := tag.GetString("type")
 				name, _ := tag.GetString("name")
 				desc, _ := tag.GetString("summary")
@@ -1016,6 +979,14 @@ func xonksaver(user *WhatAbout, item junk.Junk, origin string) *Honk {
 					m.Where, _ = tag.GetString("href")
 					mentions = append(mentions, m)
 				}
+			}
+			tags := oneforall(obj, "tag")
+			for _, tagi := range tags {
+				tag, ok := tagi.(junk.Junk)
+				if !ok {
+					continue
+				}
+				proctag(tag)
 			}
 			if starttime, ok := obj.GetString("startTime"); ok {
 				if start, err := time.Parse(time.RFC3339, starttime); err == nil {
@@ -1271,6 +1242,7 @@ func jonkjonk(user *WhatAbout, h *Honk) (junk.Junk, junk.Junk) {
 		if !h.Public {
 			jo["directMessage"] = true
 		}
+		h.Noise = re_retag.ReplaceAllString(h.Noise, "")
 		translate(h)
 		redoimages(h)
 		if h.Precis != "" {

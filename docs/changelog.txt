@@ -2,6 +2,14 @@ changelog
 
 === next
 
++ More reliable search.
+
++ Secret tags.
+
++ Mention links locally.
+
++ ::: spoiler markdown
+
 + New threaded display order.
 
 + Improved search.
