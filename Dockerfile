@@ -8,7 +8,7 @@ RUN make
 
 FROM alpine:3
 
-RUN apk add --no-cache ca-certificates tini
+RUN apk add --no-cache ca-certificates su-exec tini
 
 COPY --from=builder "/app/src/entrypoint.sh"  "/usr/local/bin/entrypoint"
 COPY --from=builder "/app/src/honk"           "/usr/local/bin/honk"

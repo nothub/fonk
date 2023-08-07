@@ -18,4 +18,4 @@ adduser                 \
 mkdir -p "/data"
 chown -R "honk:honk" "/data"
 
-honk --datadir "/data" --viewdir "/views" "$@"
+su-exec "honk" honk --datadir "/data" --viewdir "/views" "$@"
