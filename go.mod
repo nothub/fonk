@@ -10,11 +10,11 @@ require (
 	golang.org/x/crypto v0.12.0
 	golang.org/x/net v0.14.0
 	golang.org/x/term v0.11.0
-	humungus.tedunangst.com/r/webs v0.6.68
+	humungus.tedunangst.com/r/webs v0.7.1
 )
 
 require (
 	github.com/rivo/uniseg v0.2.0 // indirect
-	golang.org/x/image v0.5.0 // indirect
+	golang.org/x/image v0.11.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 )
