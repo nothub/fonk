@@ -59,5 +59,5 @@ golang.org/x/tools v0.0.0-20191119224855-298f0cb1881e/go.mod h1:b+2E5dAYhXwXZwtn
 golang.org/x/tools v0.1.12/go.mod h1:hNGJHUnrk76NpqgfD5Aqm5Crs+Hm0VOH/i9J2+nxYbc=
 golang.org/x/tools v0.6.0/go.mod h1:Xwgl3UAJ/d3gWutnCtw505GrjyAbvKui8lOU390QaIU=
 golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
-humungus.tedunangst.com/r/webs v0.6.67 h1:OO5UkQa+bHeiIrZ5IGR9JGtgGPsKsYlRJEVk1bSt+Qo=
-humungus.tedunangst.com/r/webs v0.6.67/go.mod h1:03R0N9BcT49HB4TDd1YmarpbiPvPzVDm74Mk4h1hYPc=
+humungus.tedunangst.com/r/webs v0.6.68 h1:veKjASf1krPf4o3O7hMRsNvE4+Z6LzXVso/qMccZntk=
+humungus.tedunangst.com/r/webs v0.6.68/go.mod h1:03R0N9BcT49HB4TDd1YmarpbiPvPzVDm74Mk4h1hYPc=
