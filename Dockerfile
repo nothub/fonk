@@ -19,4 +19,7 @@ WORKDIR "/var/empty"
 ENV PUID=1000
 ENV PGID=1000
 
+EXPOSE 8017/tcp
+EXPOSE 8080/tcp
+
 ENTRYPOINT ["tini", "-v", "--", "entrypoint"]
