@@ -1,10 +1,10 @@
 html {
-	--bg-page: #306;
-	--bg-dark: #002;
-	--fg: #dcf;
-	--hl: #dcf;
-	--fg-subtle: #a9c;
-	--fg-limited: #a79;
+	--bg-page: #050709;
+	--bg-dark: #151515;
+	--fg: #e6e2bd;
+	--hl: #9eac30;
+	--fg-subtle: #9eac30;
+	--fg-limited: #7e8926;
 }
 
 body {
