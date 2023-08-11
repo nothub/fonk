@@ -54,24 +54,32 @@ Even on a fast machine, building from source can take several seconds.
 
 honk expects to be fronted by a TLS terminating reverse proxy.
 
-First, create the database. The wizard will ask four questions:
+First, create the database:
 
 ```sh
-./honk init
-username:   # the username you want
-password:   # the password (or bcrypt hash) you want
-listenaddr: # tcp or unix: 127.0.0.1:31337, /var/www/honk.sock, etc.
-servername: # public DNS name: honk.example.com
+./honk init [--hash <hash>] [--listen <host:port>] <username> <fqdn>
 ```
+
+If no hash (bcrypt) is supplied, an interactive password dialog awaits your input.
+
+The listen address can be a tcp or unix socket, e.g. `127.0.0.1:31337` or `/var/www/honk.sock`.  
+The listen address defaults to: `0.0.0.0:8080`
 
 Then run honk: `./honk`
 
 ### Upgrade
 
+Prior to any honk upgrade, you should use the `backup` command:
+
 ```sh
-old-honk backup "$(date +backup-%F)"
-./honk upgrade
-./honk
+./old-honk backup "$(date +backup-%F)"
+```
+
+Then with the new honk release, just run the `upgrade` command:
+
+```sh
+./new-honk upgrade
+./new-honk
 ```
 
 ### Docker
@@ -82,7 +90,7 @@ honk is available packaged as a
 <details>
   <summary>Usage examples</summary>
 
-##### persistent data volume
+##### Persistent data volume
 
 ```sh
 docker run --rm            \
@@ -93,28 +101,29 @@ docker run --rm            \
 
 ---
 
-##### initial database setup
+##### Database setup
 
 The database will be initialized if not found.  
 A password can be supplied interactive or by flag as bcrypt hash.
 
+Handy ways to generate a bcrypt hash:
+- `hash="$(./honk genhash)"`
+- `hash="$(htpasswd -nBC 12 "" | tr -d ':\n')"`
+
 ```sh
-hash=""
-# generate crypt hash:
-# hash="$(./honk genhash)"
-# hash="$(htpasswd -nBC 12 "" | tr -d ':\n')"
-docker run -it --rm            \
-  -v "${PWD}/data:/data"       \
-  "n0thub/fonk:latest"         \
-    init                       \
-    --username "admin"         \
-    --hash "${hash}"           \
-    --fqdn "honk.example.org"
+hash="$(./honk genhash)"
+docker run --rm          \
+  -v "${PWD}/data:/data" \
+  "n0thub/fonk:latest"   \
+    init                 \
+    --hash "${hash}"     \
+    "admin"              \
+    "honk.example.org"
 ```
 
 ---
 
-##### database upgrade
+##### Database upgrade
 
 A database upgrade can be executed by passing the required command to the
 container.
@@ -128,7 +137,7 @@ docker run --rm              \
 
 ---
 
-##### custom html views
+##### Custom HTML views
 
 ```sh
 docker run --rm               \
@@ -140,7 +149,7 @@ docker run --rm               \
 
 ---
 
-##### custom uid & gid
+##### Custom UID & GID
 
 ```sh
 docker run --rm            \
