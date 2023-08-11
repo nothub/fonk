@@ -41,7 +41,7 @@ the honk has the permission of the owner of that property.
 
 ### Build
 
-To build honk, you will need a go compiler version 1.20 or later.
+To build honk, you will need a go compiler version 1.21 or later.
 
 ```sh
 git clone https://github.com/nothub/fonk.git
