@@ -44,7 +44,7 @@ the honk has the permission of the owner of that property.
 To build honk, you will need a go compiler version 1.20 or later.
 
 ```sh
-git clone https://github.com/nothub/honk.git
+git clone https://github.com/nothub/fonk.git
 cd honk && make
 ```
 
