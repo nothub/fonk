@@ -190,7 +190,7 @@ func main() {
 		}
 		args = flags.Args()
 		if len(args) < 1 {
-			fmt.Printf("usage: honk init [--hash <hash>] <username>\n")
+			fmt.Printf("usage: honk adduser [--hash <hash>] <username>\n")
 			return
 		}
 		adduser(args[0], hash)
