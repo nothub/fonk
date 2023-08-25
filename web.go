@@ -22,6 +22,7 @@ import (
 	"html/template"
 	"io"
 	notrand "math/rand"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
@@ -449,7 +450,20 @@ func inbox(w http.ResponseWriter, r *http.Request) {
 			addreaction(user, obj, who, content)
 		}
 	default:
-		go xonksaver(user, j, origin)
+		go saveandcheck(user, j, origin)
+	}
+}
+
+func saveandcheck(user *WhatAbout, j junk.Junk, origin string) {
+	xonk := xonksaver(user, j, origin)
+	if xonk == nil {
+		return
+	}
+	if sname := shortname(user.ID, xonk.Honker); sname == "" {
+		dlog.Printf("received unexpected activity from %s", xonk.Honker)
+		if xonk.Whofore == 0 {
+			dlog.Printf("it's not even for me!")
+		}
 	}
 }
 
@@ -1065,9 +1079,16 @@ func threadsort(honks []*Honk) []*Honk {
 		}
 		p.Style += fmt.Sprintf(" level%d", level)
 		childs := kids[p.XID]
-		sort.SliceStable(childs, func(i, j int) bool {
-			return sameperson(childs[i], p) && !sameperson(childs[j], p)
-		})
+		if false {
+			sort.SliceStable(childs, func(i, j int) bool {
+				return sameperson(childs[i], p) && !sameperson(childs[j], p)
+			})
+		}
+		if true {
+			sort.SliceStable(childs, func(i, j int) bool {
+				return !sameperson(childs[i], p) && sameperson(childs[j], p)
+			})
+		}
 		for _, h := range childs {
 			if !done[h] {
 				done[h] = true
@@ -1592,11 +1613,23 @@ func canedithonk(user *WhatAbout, honk *Honk) bool {
 	return true
 }
 
-func submitdonk(w http.ResponseWriter, r *http.Request) (*Donk, error) {
+func submitdonk(w http.ResponseWriter, r *http.Request) ([]*Donk, error) {
 	if !strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "multipart/form-data") {
 		return nil, nil
 	}
-	file, filehdr, err := r.FormFile("donk")
+	var donks []*Donk
+	for _, hdr := range r.MultipartForm.File["donk"] {
+		donk, err := formtodonk(w, r, hdr)
+		if err != nil {
+			return nil, err
+		}
+		donks = append(donks, donk)
+	}
+	return donks, nil
+}
+
+func formtodonk(w http.ResponseWriter, r *http.Request, filehdr *multipart.FileHeader) (*Donk, error) {
+	file, err := filehdr.Open()
 	if err != nil {
 		if err == http.ErrMissingFile {
 			return nil, nil
@@ -1770,7 +1803,7 @@ func submithonk(w http.ResponseWriter, r *http.Request) *Honk {
 				honk.Precis = "re: " + honk.Precis
 			}
 		}
-	} else {
+	} else if updatexid == "" {
 		honk.Audience = []string{thewholeworld}
 	}
 	if honk.Noise != "" && honk.Noise[0] == '@' {
@@ -1794,12 +1827,13 @@ func submithonk(w http.ResponseWriter, r *http.Request) *Honk {
 
 	donkxid := r.FormValue("donkxid")
 	if donkxid == "" {
-		d, err := submitdonk(w, r)
+		donks, err := submitdonk(w, r)
 		if err != nil && err != http.ErrMissingFile {
 			return nil
 		}
-		if d != nil {
-			honk.Donks = append(honk.Donks, d)
+		if len(donks) > 0 {
+			honk.Donks = append(honk.Donks, donks...)
+			d := donks[0]
 			donkxid = fmt.Sprintf("%s:%d", d.XID, d.FileID)
 		}
 	} else {
@@ -1972,12 +2006,12 @@ func submitchonk(w http.ResponseWriter, r *http.Request) {
 		Noise:  noise,
 		Format: format,
 	}
-	d, err := submitdonk(w, r)
+	donks, err := submitdonk(w, r)
 	if err != nil && err != http.ErrMissingFile {
 		return
 	}
-	if d != nil {
-		ch.Donks = append(ch.Donks, d)
+	if len(donks) > 0 {
+		ch.Donks = append(ch.Donks, donks...)
 	}
 
 	translatechonk(&ch)
@@ -2485,15 +2519,16 @@ func apihandler(w http.ResponseWriter, r *http.Request) {
 		}
 		fmt.Fprintf(w, "%s", h.XID)
 	case "donk":
-		d, err := submitdonk(w, r)
+		donks, err := submitdonk(w, r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if d == nil {
+		if len(donks) == 0 {
 			http.Error(w, "missing donk", http.StatusBadRequest)
 			return
 		}
+		d := donks[0]
 		donkxid := fmt.Sprintf("%s:%d", d.XID, d.FileID)
 		w.Write([]byte(donkxid))
 	case "zonkit":
