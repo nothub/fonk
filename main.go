@@ -66,6 +66,11 @@ func reexecArgs(cmd string) []string {
 
 var elog, ilog, dlog *golog.Logger
 
+func errx(msg string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, msg+"\n", args...)
+	os.Exit(1)
+}
+
 func main() {
 	log.Init(log.Options{Progname: "honk", Facility: syslog.LOG_UUCP})
 	elog = log.E
@@ -94,11 +99,11 @@ func main() {
 		os.Stderr.WriteString("hash=\"$(./honk genhash)\"\n")
 		pass, err := askpassword()
 		if err != nil {
-			elog.Fatalf("error: %s\n", err.Error())
+			errx("error: %s", err.Error())
 		}
 		hash, err := bcrypt.GenerateFromPassword([]byte(pass), 12)
 		if err != nil {
-			elog.Fatalf("error: %s\n", err.Error())
+			errx("error: %s", err.Error())
 		}
 		os.Stderr.WriteString("For a flag option, copy the following line:\n")
 		os.Stderr.WriteString("--hash \"" + strings.ReplaceAll(string(hash), "$", "\\$") + "\"\n")
@@ -112,7 +117,7 @@ func main() {
 		flags.StringVar(&listen, "listen", "0.0.0.0:8080", "listen address")
 		err := flags.Parse(args)
 		if err != nil {
-			elog.Fatalf("failed parsing flags: %s\n", err.Error())
+			errx("failed parsing flags: %s", err)
 		}
 		args = flags.Args()
 		if len(args) < 2 {
@@ -145,9 +150,14 @@ func main() {
 	getconfig("usersep", &userSep)
 	getconfig("honksep", &honkSep)
 	getconfig("devel", &develMode)
+	if develMode {
+		gogglesDoNothing()
+	}
 	getconfig("fasttimeout", &fastTimeout)
 	getconfig("slowtimeout", &slowTimeout)
-	getconfig("signgets", &signGets)
+	getconfig("honkwindow", &honkwindow)
+	honkwindow *= 24 * time.Hour
+
 	prepareStatements(db)
 
 	switch cmd {
@@ -155,17 +165,17 @@ func main() {
 		adminscreen()
 	case "import":
 		if len(args) != 3 {
-			elog.Fatal("usage: import <username> (honk|mastodon|twitter) <srcdir>\n")
+			errx("usage: import <username> (honk|mastodon|twitter) <srcdir>")
 		}
 		importMain(args[0], args[1], args[2])
 	case "export":
 		if len(args) != 2 {
-			elog.Fatal("export username destdir")
+			errx("export username destdir")
 		}
 		export(args[0], args[1])
 	case "devel":
 		if len(args) != 1 {
-			elog.Fatal("usage: devel (on|off)")
+			errx("usage: devel (on|off)")
 		}
 		switch args[0] {
 		case "on":
@@ -173,11 +183,11 @@ func main() {
 		case "off":
 			setconfig("devel", 0)
 		default:
-			elog.Fatal("usage: devel (on|off)")
+			errx("usage: devel (on|off)")
 		}
 	case "setconfig":
 		if len(args) != 2 {
-			elog.Fatal("usage: setconfig <key> <val>\n")
+			errx("usage: setconfig <key> <val>")
 		}
 		var val interface{}
 		var err error
@@ -201,66 +211,55 @@ func main() {
 		adduser(args[0], hash)
 	case "deluser":
 		if len(args) < 1 {
-			fmt.Printf("usage: honk deluser <username>\n")
-			return
+			errx("usage: honk deluser <username>")
 		}
 		deluser(args[0])
 	case "chpass":
 		if len(args) < 1 {
-			fmt.Printf("usage: honk chpass <username>\n")
-			return
+			errx("usage: honk chpass <username>")
 		}
 		chpass(args[0])
 	case "follow":
 		if len(args) < 2 {
-			fmt.Printf("usage: honk follow <username> <url>\n")
-			return
+			errx("usage: honk follow <username> <url>")
 		}
 		user, err := butwhatabout(args[0])
 		if err != nil {
-			fmt.Printf("user not found\n")
-			return
+			errx("user %s not found", args[0])
 		}
 		var meta HonkerMeta
 		mj, _ := jsonify(&meta)
 		honkerid, err := savehonker(user, args[1], "", "presub", "", mj)
 		if err != nil {
-			fmt.Printf("had some trouble with that: %s\n", err)
-			return
+			errx("had some trouble with that: %s", err)
 		}
 		followyou(user, honkerid, true)
 	case "unfollow":
 		if len(args) < 2 {
-			fmt.Printf("usage: honk unfollow username url\n")
-			return
+			errx("usage: honk unfollow <username> <url>")
 		}
 		user, err := butwhatabout(args[0])
 		if err != nil {
-			fmt.Printf("user not found\n")
-			return
+			errx("user not found")
 		}
 		row := db.QueryRow("select honkerid from honkers where xid = ? and userid = ? and flavor in ('sub')", args[1], user.ID)
 		var honkerid int64
 		err = row.Scan(&honkerid)
 		if err != nil {
-			fmt.Printf("sorry couldn't find them\n")
-			return
+			errx("sorry could not find them: %s", err)
 		}
 		unfollowyou(user, honkerid, true)
 	case "sendmsg":
 		if len(args) < 3 {
-			fmt.Printf("usage: honk sendmsg username filename rcpt\n")
-			return
+			errx("usage: honk sendmsg username filename rcpt")
 		}
 		user, err := butwhatabout(args[0])
 		if err != nil {
-			fmt.Printf("user not found\n")
-			return
+			errx("user %s not found: %s", args[0], err)
 		}
 		data, err := os.ReadFile(args[1])
 		if err != nil {
-			fmt.Printf("can't read file\n")
-			return
+			errx("can not read file: %s", err)
 		}
 		deliverate(user.ID, args[2], data)
 	case "cleanup":
@@ -271,29 +270,25 @@ func main() {
 		cleanupdb(arg)
 	case "unplug":
 		if len(args) < 1 {
-			fmt.Printf("usage: honk unplug <servername>\n")
-			return
+			errx("usage: honk unplug <servername>")
 		}
 		name := args[0]
 		unplugserver(name)
 	case "backup":
 		if len(args) < 1 {
-			fmt.Printf("usage: honk backup <dirname>\n")
-			return
+			errx("usage: honk backup <dirname>")
 		}
 		name := args[0]
 		svalbard(name)
 	case "ping":
 		if len(args) < 2 {
-			fmt.Printf("usage: honk ping (from username) (to username or url)\n")
-			return
+			errx("usage: honk ping (from username) (to username or url)")
 		}
 		name := args[0]
 		targ := args[1]
 		user, err := butwhatabout(name)
 		if err != nil {
-			elog.Printf("unknown user")
-			return
+			errx("unknown user %s", name)
 		}
 		ping(user, targ)
 	case "run":
@@ -303,6 +298,6 @@ func main() {
 	case "test":
 		ElaborateUnitTests()
 	default:
-		elog.Fatal("unknown command")
+		errx("unknown command")
 	}
 }

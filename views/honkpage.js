@@ -82,7 +82,7 @@ var lehonkbutton = document.getElementById("honkingtime")
 function oldestnewest(btn) {
 	var els = document.getElementsByClassName("glow")
 	if (els.length) {
-		els[els.length-1].scrollIntoView()
+		els[els.length-1].scrollIntoView({ behavior: "smooth" })
 	}
 }
 function removeglow() {
@@ -416,6 +416,72 @@ function fillcheckin() {
 		}, gpsoptions)
 	}
 }
+
+function scrollnexthonk() {
+	var honks = document.getElementsByClassName("honk");
+	for (var i = 0; i < honks.length; i++) {
+		var h = honks[i];
+		var b = h.getBoundingClientRect();
+		if (b.top > 1.0) {
+			h.scrollIntoView()
+			var a = h.querySelector(".actions summary")
+			if (a) a.focus({ preventScroll: true })
+			break
+		}
+	}
+}
+
+function scrollprevioushonk() {
+	var honks = document.getElementsByClassName("honk");
+	for (var i = 1; i < honks.length; i++) {
+		var b = honks[i].getBoundingClientRect();
+		if (b.top > -1.0) {
+			honks[i-1].scrollIntoView()
+			var a = honks[i-1].querySelector(".actions summary")
+			if (a) a.focus({ preventScroll: true })
+			break
+		}
+	}
+}
+
+function hotkey(e) {
+	if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)
+		return
+	if (e.ctrlKey || e.altKey)
+		return
+
+	switch (e.code) {
+	case "KeyR":
+		refreshhonks(document.getElementById("honkrefresher"));
+		break;
+	case "KeyS":
+		oldestnewest(document.getElementById("newerscroller"));
+		break;
+	case "KeyJ":
+		scrollnexthonk();
+		break;
+	case "KeyK":
+		scrollprevioushonk();
+		break;
+	case "KeyM":
+		var menu = document.getElementById("topmenu")
+		menu.open = true
+		menu.querySelector("a").focus()
+		break
+	case "Escape":
+		var menu = document.getElementById("topmenu")
+		menu.open = false
+		break
+	case "Slash":
+		document.getElementById("topmenu").open = true
+		document.getElementById("searchbox").focus()
+		e.preventDefault()
+		break
+	}
+}
+
+document.addEventListener("keydown", hotkey)
+
 function addemu(elem) {
 	const data = elem.alt
 	const box = document.getElementById("honknoise");

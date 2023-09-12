@@ -18,11 +18,9 @@ package main
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha512"
 	"database/sql"
 	"fmt"
 	"golang.org/x/term"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
@@ -35,23 +33,7 @@ import (
 	"humungus.tedunangst.com/r/webs/login"
 )
 
-var savedassetparams = make(map[string]string)
-
 var re_plainname = regexp.MustCompile("^[[:alnum:]_-]+$")
-
-func getassetparam(file string) string {
-	if p, ok := savedassetparams[file]; ok {
-		return p
-	}
-	data, err := ioutil.ReadFile(file)
-	if err != nil {
-		return ""
-	}
-	hasher := sha512.New()
-	hasher.Write(data)
-
-	return fmt.Sprintf("?v=%.8x", hasher.Sum(nil))
-}
 
 var dbtimeformat = "2006-01-02 15:04:05"
 

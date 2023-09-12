@@ -17,6 +17,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha512"
 	"database/sql"
 	"fmt"
 	"html/template"
@@ -37,6 +38,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"humungus.tedunangst.com/r/webs/cache"
+	"humungus.tedunangst.com/r/webs/gencache"
 	"humungus.tedunangst.com/r/webs/httpsig"
 	"humungus.tedunangst.com/r/webs/junk"
 	"humungus.tedunangst.com/r/webs/login"
@@ -87,6 +89,9 @@ func getInfo(r *http.Request) map[string]interface{} {
 	templinfo["ServerName"] = serverName
 	templinfo["IconName"] = iconName
 	templinfo["UserSep"] = userSep
+	if r == nil {
+		return templinfo
+	}
 	if u := login.GetUserInfo(r); u != nil {
 		templinfo["UserInfo"], _ = butwhatabout(u.Username)
 		templinfo["UserStyle"] = getuserstyle(u)
@@ -97,9 +102,50 @@ func getInfo(r *http.Request) map[string]interface{} {
 	return templinfo
 }
 
+var oldnews = gencache.New(gencache.Options[string, []byte]{
+	Fill: func(url string) ([]byte, bool) {
+		templinfo := getInfo(nil)
+		var honks []*Honk
+		var userid int64 = -1
+
+		templinfo["ServerMessage"] = serverMsg
+		switch url {
+		case "/events":
+			honks = geteventhonks(userid)
+			templinfo["ServerMessage"] = "some recent and upcoming events"
+		default:
+			templinfo["ShowRSS"] = true
+			honks = getpublichonks()
+		}
+		reverbolate(userid, honks)
+		templinfo["Honks"] = honks
+		templinfo["MapLink"] = getmaplink(nil)
+		var buf bytes.Buffer
+		err := readviews.Execute(&buf, "honkpage.html", templinfo)
+		if err != nil {
+			elog.Print(err)
+		}
+		return buf.Bytes(), true
+
+	},
+	Duration: 1 * time.Minute,
+})
+
+func lonelypage(w http.ResponseWriter, r *http.Request) {
+	page, _ := oldnews.Get(r.URL.Path)
+	if !develMode {
+		w.Header().Set("Cache-Control", "max-age=60")
+	}
+	w.Write(page)
+}
+
 func homepage(w http.ResponseWriter, r *http.Request) {
-	templinfo := getInfo(r)
 	u := login.GetUserInfo(r)
+	if u == nil {
+		lonelypage(w, r)
+		return
+	}
+	templinfo := getInfo(r)
 	var honks []*Honk
 	var userid int64 = -1
 
@@ -1198,10 +1244,10 @@ func showonehonk(w http.ResponseWriter, r *http.Request) {
 	//reversehonks(rawhonks)
 	rawhonks = threadsort(rawhonks)
 	var honks []*Honk
-	for _, h := range rawhonks {
+	for i, h := range rawhonks {
 		if h.XID == xid {
 			templinfo["Honkology"] = honkology(h)
-			if len(honks) != 0 {
+			if i > 0 {
 				h.Style += " glow"
 			}
 		}
@@ -1569,11 +1615,15 @@ func edithonkpage(w http.ResponseWriter, r *http.Request) {
 			templinfo["Duration"] = tm.Duration
 		}
 	}
-	templinfo["ServerMessage"] = "honk edit 2"
+	templinfo["ServerMessage"] = "honk edit"
 	templinfo["IsPreview"] = true
 	templinfo["UpdateXID"] = honk.XID
 	if len(honk.Donks) > 0 {
-		templinfo["SavedFile"] = honk.Donks[0].XID
+		var savedfiles []string
+		for _, d := range honk.Donks {
+			savedfiles = append(savedfiles, fmt.Sprintf("%s:%d", d.XID, d.FileID))
+		}
+		templinfo["SavedFile"] = strings.Join(savedfiles, ",")
 	}
 	err := readviews.Execute(w, "honkpage.html", templinfo)
 	if err != nil {
@@ -1618,7 +1668,10 @@ func submitdonk(w http.ResponseWriter, r *http.Request) ([]*Donk, error) {
 		return nil, nil
 	}
 	var donks []*Donk
-	for _, hdr := range r.MultipartForm.File["donk"] {
+	for i, hdr := range r.MultipartForm.File["donk"] {
+		if i > 16 {
+			break
+		}
 		donk, err := formtodonk(w, r, hdr)
 		if err != nil {
 			return nil, err
@@ -1643,7 +1696,7 @@ func formtodonk(w http.ResponseWriter, r *http.Request, filehdr *multipart.FileH
 	file.Close()
 	data := buf.Bytes()
 	var media, name string
-	img, err := shrinkit(data)
+	img, err := bigshrink(data)
 	if err == nil {
 		data = img.Data
 		format := img.Format
@@ -1825,7 +1878,7 @@ func submithonk(w http.ResponseWriter, r *http.Request) *Honk {
 	honk.Public = loudandproud(honk.Audience)
 	honk.Convoy = convoy
 
-	donkxid := r.FormValue("donkxid")
+	donkxid := strings.Join(r.Form["donkxid"], ",")
 	if donkxid == "" {
 		donks, err := submitdonk(w, r)
 		if err != nil && err != http.ErrMissingFile {
@@ -1833,11 +1886,18 @@ func submithonk(w http.ResponseWriter, r *http.Request) *Honk {
 		}
 		if len(donks) > 0 {
 			honk.Donks = append(honk.Donks, donks...)
-			d := donks[0]
-			donkxid = fmt.Sprintf("%s:%d", d.XID, d.FileID)
+			var xids []string
+			for _, d := range honk.Donks {
+				xids = append(xids, fmt.Sprintf("%s:%d", d.XID, d.FileID))
+			}
+			donkxid = strings.Join(xids, ",")
 		}
 	} else {
-		for _, xid := range r.Form["donkxid"] {
+		xids := strings.Split(donkxid, ",")
+		for i, xid := range xids {
+			if i > 16 {
+				break
+			}
 			p := strings.Split(xid, ":")
 			xid = p[0]
 			url := fmt.Sprintf("https://%s/d/%s", serverName, xid)
@@ -2676,6 +2736,22 @@ func emuinit() {
 	sort.Slice(allemus, func(i, j int) bool {
 		return allemus[i].Name < allemus[j].Name
 	})
+}
+
+var savedassetparams = make(map[string]string)
+
+func getassetparam(file string) string {
+	if p, ok := savedassetparams[file]; ok {
+		return p
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return ""
+	}
+	hasher := sha512.New()
+	hasher.Write(data)
+
+	return fmt.Sprintf("?v=%.8x", hasher.Sum(nil))
 }
 
 func serve() {
