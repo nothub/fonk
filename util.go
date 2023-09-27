@@ -41,6 +41,7 @@ var alreadyopendb *sql.DB
 var stmtConfig *sql.Stmt
 
 func initdb(username string, hash string, hostname string, listen string) {
+	blobdbname := dataDir + "/blob.db"
 	dbname := dataDir + "/honk.db"
 	_, err := os.Stat(dbname)
 	if err == nil {
@@ -53,6 +54,7 @@ func initdb(username string, hash string, hostname string, listen string) {
 	alreadyopendb = db
 	defer func() {
 		os.Remove(dbname)
+		os.Remove(blobdbname)
 		os.Exit(1)
 	}()
 	c := make(chan os.Signal, 1)
@@ -60,6 +62,7 @@ func initdb(username string, hash string, hostname string, listen string) {
 	go func() {
 		<-c
 		os.Remove(dbname)
+		os.Remove(blobdbname)
 		os.Exit(1)
 	}()
 
@@ -76,7 +79,7 @@ func initdb(username string, hash string, hostname string, listen string) {
 		}
 	}
 
-	initblobdb()
+	initblobdb(blobdbname)
 
 	prepareStatements(db)
 
@@ -122,8 +125,7 @@ func initdb(username string, hash string, hostname string, listen string) {
 	os.Exit(0)
 }
 
-func initblobdb() {
-	blobdbname := dataDir + "/blob.db"
+func initblobdb(blobdbname string) {
 	_, err := os.Stat(blobdbname)
 	if err == nil {
 		elog.Fatalf("%s already exists", blobdbname)
@@ -383,6 +385,10 @@ func openListener() (net.Listener, error) {
 	err := getconfig("listenaddr", &listenAddr)
 	if err != nil {
 		return nil, err
+	}
+	if strings.HasPrefix(listenAddr, "fcgi:") {
+		listenAddr = listenAddr[5:]
+		usefcgi = true
 	}
 	if listenAddr == "" {
 		return nil, fmt.Errorf("must have listenaddr")
