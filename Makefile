@@ -3,7 +3,7 @@ BIN_NAME = $(shell basename $(MOD_NAME))
 GOFLAGS  = -race -tags netgo,timetzdata,sqlite_omit_load_extension
 LDFLAGS  = -ldflags="-extldflags=-static"
 
-honk: schema.sql $(shell ls go.mod go.sum *.go **/*.go)
+honk: go.mod go.sum $(shell find . -name '*.go') schema.sql
 	CGO_ENABLED=1 go build $(GOFLAGS) $(LDFLAGS) -o honk
 
 .PHONY: clean
