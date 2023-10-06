@@ -6,7 +6,6 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'nothub'
     steps:
 
       - name: 'Checkout repo'
