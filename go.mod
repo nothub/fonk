@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/andybalholm/cascadia v1.3.2
-	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/mux v1.8.1
 	github.com/mattn/go-runewidth v0.0.15
 	github.com/mattn/go-sqlite3 v1.14.17
 	golang.org/x/crypto v0.14.0
