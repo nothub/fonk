@@ -16,4 +16,4 @@ fi
 
 # merge upstream changes
 git checkout master
-git pull --log --rebase upstream master
+git pull --log --no-rebase upstream master
