@@ -2,7 +2,7 @@
 
 set -eu
 
-cd "$(realpath "$(dirname "$(readlink -f "$0")")/..")"
+cd "$(dirname "$(realpath "$0")")/.."
 
 if ! type git-remote-hg >/dev/null 2>&1; then
     echo >&2 "Put git-remote-hg in your path to bridge git and hg:"
