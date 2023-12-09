@@ -1,4 +1,4 @@
-module github.com/nothub/fonk
+module hub.lol/fonk
 
 go 1.21
 
