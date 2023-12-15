@@ -6,7 +6,7 @@ require (
 	github.com/andybalholm/cascadia v1.3.2
 	github.com/gorilla/mux v1.8.1
 	github.com/mattn/go-runewidth v0.0.15
-	github.com/mattn/go-sqlite3 v1.14.18
+	github.com/mattn/go-sqlite3 v1.14.19
 	golang.org/x/crypto v0.16.0
 	golang.org/x/net v0.19.0
 	golang.org/x/term v0.15.0
