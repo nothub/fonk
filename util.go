@@ -408,5 +408,6 @@ func openListener() (net.Listener, error) {
 	if proto == "unix" {
 		os.Chmod(listenAddr, 0777)
 	}
+	listenSocket = listener
 	return listener, nil
 }

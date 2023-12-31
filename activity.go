@@ -30,8 +30,8 @@ import (
 	"strings"
 	"time"
 
-	"humungus.tedunangst.com/r/webs/cache"
 	"humungus.tedunangst.com/r/webs/gate"
+	"humungus.tedunangst.com/r/webs/gencache"
 	"humungus.tedunangst.com/r/webs/httpsig"
 	"humungus.tedunangst.com/r/webs/junk"
 	"humungus.tedunangst.com/r/webs/templates"
@@ -43,8 +43,10 @@ var falsenames = []string{
 	`application/ld+json`,
 	`application/activity+json`,
 }
-var itiswhatitis = "https://www.w3.org/ns/activitystreams"
-var thewholeworld = "https://www.w3.org/ns/activitystreams#Public"
+
+const itiswhatitis = "https://www.w3.org/ns/activitystreams"
+const thewholeworld = "https://www.w3.org/ns/activitystreams#Public"
+const tinyworld = "as:Public"
 
 var fastTimeout time.Duration = 5
 var slowTimeout time.Duration = 30
@@ -59,13 +61,18 @@ func friendorfoe(ct string) bool {
 	return false
 }
 
-var honkClient = http.Client{}
+var honkTransport = http.Transport{
+	MaxIdleConns:    120,
+	MaxConnsPerHost: 4,
+}
+
+var honkClient = http.Client{
+	Transport: &honkTransport,
+}
 
 func gogglesDoNothing() {
-	honkClient.Transport = &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
+	honkTransport.TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: true,
 	}
 }
 
@@ -88,12 +95,15 @@ func PostMsg(keyname string, key httpsig.PrivateKey, url string, msg []byte) err
 	if err != nil {
 		return err
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case 200:
 	case 201:
 	case 202:
 	default:
+		var buf [4096]byte
+		n, _ := resp.Body.Read(buf[:])
+		dlog.Printf("post failure message: %s", buf[:n])
 		return fmt.Errorf("http post status: %d", resp.StatusCode)
 	}
 	ilog.Printf("successful post: %s %d", url, resp.StatusCode)
@@ -101,23 +111,24 @@ func PostMsg(keyname string, key httpsig.PrivateKey, url string, msg []byte) err
 }
 
 func GetJunk(userid int64, url string) (junk.Junk, error) {
-	return GetJunkTimeout(userid, url, slowTimeout*time.Second)
+	return GetJunkTimeout(userid, url, slowTimeout*time.Second, nil)
 }
 
 func GetJunkFast(userid int64, url string) (junk.Junk, error) {
-	return GetJunkTimeout(userid, url, fastTimeout*time.Second)
+	return GetJunkTimeout(userid, url, fastTimeout*time.Second, nil)
 }
 
 func GetJunkHardMode(userid int64, url string) (junk.Junk, error) {
 	j, err := GetJunk(userid, url)
 	if err != nil {
 		emsg := err.Error()
-		if emsg == "http get status: 502" || strings.Contains(emsg, "timeout") {
-			ilog.Printf("trying again after error: %s", emsg)
+		if emsg == "http get status: 429" || emsg == "http get status: 502" ||
+			strings.Contains(emsg, "timeout") {
+			ilog.Printf("trying %s again after error: %s", url, emsg)
 			time.Sleep(time.Duration(60+notrand.Int63n(60)) * time.Second)
 			j, err = GetJunk(userid, url)
 			if err != nil {
-				ilog.Printf("still couldn't get it")
+				ilog.Printf("still couldn't get %s", url)
 			} else {
 				ilog.Printf("retry success!")
 			}
@@ -128,14 +139,16 @@ func GetJunkHardMode(userid int64, url string) (junk.Junk, error) {
 
 var flightdeck = gate.NewSerializer()
 
-func GetJunkTimeout(userid int64, url string, timeout time.Duration) (junk.Junk, error) {
+func GetJunkTimeout(userid int64, url string, timeout time.Duration, final *string) (junk.Junk, error) {
 	if rejectorigin(userid, url, false) {
 		return nil, fmt.Errorf("rejected origin: %s", url)
 	}
+	if final != nil {
+		*final = url
+	}
 	sign := func(req *http.Request) error {
-		var ki *KeyInfo
-		ok := ziggies.Get(userid, &ki)
-		if ok {
+		ki := ziggy(userid)
+		if ki != nil {
 			httpsig.SignRequest(ki.keyname, ki.seckey, req, nil)
 		}
 		return nil
@@ -147,6 +160,9 @@ func GetJunkTimeout(userid int64, url string, timeout time.Duration) (junk.Junk,
 	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		if len(via) >= 5 {
 			return fmt.Errorf("stopped after 5 redirects")
+		}
+		if final != nil {
+			*final = req.URL.String()
 		}
 		if sign != nil {
 			sign(req)
@@ -338,7 +354,7 @@ type Box struct {
 	Shared string
 }
 
-var boxofboxes = cache.New(cache.Options{Filler: func(ident string) (*Box, bool) {
+var boxofboxes = gencache.New(gencache.Options[string, *Box]{Fill: func(ident string) (*Box, bool) {
 	var info string
 	row := stmtGetXonker.QueryRow(ident, "boxes")
 	err := row.Scan(&info)
@@ -362,6 +378,15 @@ var boxofboxes = cache.New(cache.Options{Filler: func(ident string) (*Box, bool)
 	return nil, false
 }})
 
+var gettergate = gate.NewLimiter(1)
+
+func getsomemore(user *WhatAbout, page string) {
+	time.Sleep(5 * time.Second)
+	gettergate.Start()
+	defer gettergate.Finish()
+	gimmexonks(user, page)
+}
+
 func gimmexonks(user *WhatAbout, outbox string) {
 	dlog.Printf("getting outbox: %s", outbox)
 	j, err := GetJunk(user.ID, outbox)
@@ -371,7 +396,7 @@ func gimmexonks(user *WhatAbout, outbox string) {
 	}
 	t, _ := j.GetString("type")
 	origin := originate(outbox)
-	if t == "OrderedCollection" {
+	if t == "OrderedCollection" || t == "CollectionPage" {
 		items, _ := j.GetArray("orderedItems")
 		if items == nil {
 			items, _ = j.GetArray("items")
@@ -481,7 +506,7 @@ func firstofmany(obj junk.Junk, key string) string {
 }
 
 var re_mast0link = regexp.MustCompile(`https://[[:alnum:].]+/users/[[:alnum:]]+/statuses/[[:digit:]]+`)
-var re_masto1ink = regexp.MustCompile(`https://([[:alnum:].]+)/@([[:alnum:]]+)/([[:digit:]]+)`)
+var re_masto1ink = regexp.MustCompile(`https://([[:alnum:].]+)/@([[:alnum:]]+)(@[[:alnum:].]+)?/([[:digit:]]+)`)
 var re_misslink = regexp.MustCompile(`https://[[:alnum:].]+/notes/[[:alnum:]]+`)
 var re_honklink = regexp.MustCompile(`https://[[:alnum:].]+/u/[[:alnum:]]+/h/[[:alnum:]]+`)
 var re_r0malink = regexp.MustCompile(`https://[[:alnum:].]+/objects/[[:alnum:]-]+`)
@@ -515,7 +540,6 @@ func xonksaver(user *WhatAbout, item junk.Junk, origin string) *Honk {
 				re_roma1ink.MatchString(m) {
 				tryit = true
 			} else if re_masto1ink.MatchString(m) {
-				m = re_masto1ink.ReplaceAllString(m, "https://$1/users/$2/statuses/$3")
 				tryit = true
 			}
 			if tryit {
@@ -523,16 +547,17 @@ func xonksaver(user *WhatAbout, item junk.Junk, origin string) *Honk {
 				if m == qurl {
 					prefix += fmt.Sprintf("<p><a href=\"%s\">%s</a>", m, m)
 				}
+				var final string
 				if x := getxonk(user.ID, m); x != nil {
 					content = fmt.Sprintf("%s%s<blockquote>%s</blockquote>", content, prefix, x.Noise)
-				} else if j, err := GetJunk(user.ID, m); err == nil {
+				} else if j, err := GetJunkTimeout(user.ID, m, fastTimeout*time.Second, &final); err == nil {
 					q, ok := j.GetString("content")
 					if ok {
 						content = fmt.Sprintf("%s%s<blockquote>%s</blockquote>", content, prefix, q)
 					}
 					prevdepth := depth
 					depth = maxdepth
-					xonkxonkfn(j, originate(m), false, "")
+					xonkxonkfn(j, originate(final), false, "")
 					depth = prevdepth
 				}
 			}
@@ -777,6 +802,11 @@ func xonksaver(user *WhatAbout, item junk.Junk, origin string) *Honk {
 		}
 		xonk.Audience = append(xonk.Audience, xonk.Honker)
 		xonk.Audience = oneofakind(xonk.Audience)
+		for i, a := range xonk.Audience {
+			if a == tinyworld {
+				xonk.Audience[i] = thewholeworld
+			}
+		}
 		xonk.Public = loudandproud(xonk.Audience)
 
 		var mentions []Mention
@@ -1409,7 +1439,7 @@ func jonkjonk(user *WhatAbout, h *Honk) (junk.Junk, junk.Junk) {
 	return j, jo
 }
 
-var oldjonks = cache.New(cache.Options{Filler: func(xid string) ([]byte, bool) {
+var oldjonks = gencache.New(gencache.Options[string, []byte]{Fill: func(xid string) ([]byte, bool) {
 	row := stmtAnyXonk.QueryRow(xid)
 	honk := scanhonk(row)
 	if honk == nil || !honk.Public {
@@ -1434,8 +1464,7 @@ var oldjonks = cache.New(cache.Options{Filler: func(xid string) ([]byte, bool) {
 }, Limit: 128})
 
 func gimmejonk(xid string) ([]byte, bool) {
-	var j []byte
-	ok := oldjonks.Get(xid, &j)
+	j, ok := oldjonks.Get(xid)
 	return j, ok
 }
 
@@ -1449,8 +1478,7 @@ func boxuprcpts(user *WhatAbout, addresses []string, useshared bool) map[string]
 			rcpts[a] = true
 			continue
 		}
-		var box *Box
-		ok := boxofboxes.Get(a, &box)
+		box, ok := boxofboxes.Get(a)
 		if ok && useshared && box.Shared != "" {
 			rcpts["%"+box.Shared] = true
 		} else {
@@ -1526,8 +1554,7 @@ func honkworldwide(user *WhatAbout, honk *Honk) {
 			if h.XID == user.URL {
 				continue
 			}
-			var box *Box
-			ok := boxofboxes.Get(h.XID, &box)
+			box, ok := boxofboxes.Get(h.XID)
 			if ok && box.Shared != "" {
 				rcpts["%"+box.Shared] = true
 			} else {
@@ -1538,8 +1565,7 @@ func honkworldwide(user *WhatAbout, honk *Honk) {
 			if f[0] == '%' {
 				rcpts[f] = true
 			} else {
-				var box *Box
-				ok := boxofboxes.Get(f, &box)
+				box, ok := boxofboxes.Get(f)
 				if ok && box.Shared != "" {
 					rcpts["%"+box.Shared] = true
 				} else {
@@ -1572,8 +1598,7 @@ func collectiveaction(honk *Honk) {
 		j["target"] = fmt.Sprintf("https://%s/o/%s", serverName, ont[1:])
 		rcpts := make(map[string]bool)
 		for _, dub := range dubs {
-			var box *Box
-			ok := boxofboxes.Get(dub.XID, &box)
+			box, ok := boxofboxes.Get(dub.XID)
 			if ok && box.Shared != "" {
 				rcpts["%"+box.Shared] = true
 			} else {
@@ -1638,7 +1663,7 @@ func junkuser(user *WhatAbout) junk.Junk {
 	return j
 }
 
-var oldjonkers = cache.New(cache.Options{Filler: func(name string) ([]byte, bool) {
+var oldjonkers = gencache.New(gencache.Options[string, []byte]{Fill: func(name string) ([]byte, bool) {
 	user, err := butwhatabout(name)
 	if err != nil {
 		return nil, false
@@ -1648,12 +1673,11 @@ var oldjonkers = cache.New(cache.Options{Filler: func(name string) ([]byte, bool
 }, Duration: 1 * time.Minute})
 
 func asjonker(name string) ([]byte, bool) {
-	var j []byte
-	ok := oldjonkers.Get(name, &j)
+	j, ok := oldjonkers.Get(name)
 	return j, ok
 }
 
-var handfull = cache.New(cache.Options{Filler: func(name string) (string, bool) {
+var handfull = gencache.New(gencache.Options[string, string]{Fill: func(name string) (string, bool) {
 	m := strings.Split(name, "@")
 	if len(m) != 2 {
 		dlog.Printf("bad fish name: %s", name)
@@ -1696,8 +1720,7 @@ func gofish(name string) string {
 	if name[0] == '@' {
 		name = name[1:]
 	}
-	var href string
-	handfull.Get(name, &href)
+	href, _ := handfull.Get(name)
 	return href
 }
 
@@ -1861,8 +1884,7 @@ func ingesthandle(origin string, obj junk.Junk) {
 }
 
 func updateMe(username string) {
-	var user *WhatAbout
-	somenamedusers.Get(username, &user)
+	user, _ := somenamedusers.Get(username)
 	dt := time.Now().UTC().Format(time.RFC3339)
 	j := junk.New()
 	j["@context"] = itiswhatitis
@@ -1880,9 +1902,8 @@ func updateMe(username string) {
 		if f.XID == user.URL {
 			continue
 		}
-		var box *Box
-		boxofboxes.Get(f.XID, &box)
-		if box != nil && box.Shared != "" {
+		box, ok := boxofboxes.Get(f.XID)
+		if ok && box.Shared != "" {
 			rcpts["%"+box.Shared] = true
 		} else {
 			rcpts[f.XID] = true

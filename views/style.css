@@ -6,6 +6,15 @@ html {
 	--fg-subtle: #9eac30;
 	--fg-limited: #7e8926;
 }
+@media (prefers-color-scheme: dark) {
+img {
+	opacity: .5;
+	transition: opacity .5s ease-in-out;
+}
+img:hover {
+	opacity: 1;
+}
+}
 
 body {
 	background: var(--bg-page);
