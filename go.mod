@@ -9,7 +9,7 @@ require (
 	golang.org/x/crypto v0.17.0
 	golang.org/x/net v0.19.0
 	golang.org/x/term v0.16.0
-	humungus.tedunangst.com/r/gonix v0.1.3
+	humungus.tedunangst.com/r/gonix v0.1.4
 	humungus.tedunangst.com/r/webs v0.7.9
 )
 
