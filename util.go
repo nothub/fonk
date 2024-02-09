@@ -281,8 +281,13 @@ func createuser(db *sql.DB, name string, hash string) error {
 	if err != nil {
 		return err
 	}
+	chatpubkey, chatseckey := newChatKeys()
+	var opts UserOptions
+	opts.ChatPubKey = tob64(chatpubkey.key[:])
+	opts.ChatSecKey = tob64(chatseckey.key[:])
+	jopt, _ := jsonify(opts)
 	about := "what about me?"
-	_, err = db.Exec("insert into users (username, displayname, about, hash, pubkey, seckey, options) values (?, ?, ?, ?, ?, ?, ?)", name, name, about, hash, pubkey, seckey, "{}")
+	_, err = db.Exec("insert into users (username, displayname, about, hash, pubkey, seckey, options) values (?, ?, ?, ?, ?, ?, ?)", name, name, about, hash, pubkey, seckey, jopt)
 	if err != nil {
 		return err
 	}
