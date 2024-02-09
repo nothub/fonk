@@ -75,6 +75,10 @@ func errx(msg string, args ...interface{}) {
 }
 
 func main() {
+	flag.StringVar(&dataDir, "datadir", dataDir, "data directory")
+	flag.StringVar(&viewDir, "viewdir", viewDir, "view directory")
+	flag.Parse()
+
 	log.Init(log.Options{Progname: "honk", Facility: syslog.LOG_UUCP})
 	elog = log.E
 	ilog = log.I
@@ -83,10 +87,6 @@ func main() {
 	if os.Geteuid() == 0 {
 		elog.Fatalf("do not run honk as root")
 	}
-
-	flag.StringVar(&dataDir, "datadir", dataDir, "data directory")
-	flag.StringVar(&viewDir, "viewdir", viewDir, "view directory")
-	flag.Parse()
 
 	args := flag.Args()
 	cmd := "run"
