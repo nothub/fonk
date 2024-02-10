@@ -18,5 +18,8 @@ adduser                 \
 mkdir -p "/data"
 chown -R "honk:honk" "/data"
 
-su-exec "honk" honk --datadir "/data" upgrade
+if test -f "/data/honk.db"; then
+    su-exec "honk" honk --datadir "/data" upgrade
+fi
+
 su-exec "honk" honk --datadir "/data" --viewdir "/views" "$@"
