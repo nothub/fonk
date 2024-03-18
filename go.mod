@@ -10,7 +10,7 @@ require (
 	golang.org/x/net v0.22.0
 	golang.org/x/term v0.18.0
 	humungus.tedunangst.com/r/gonix v0.1.4
-	humungus.tedunangst.com/r/webs v0.7.10
+	humungus.tedunangst.com/r/webs v0.7.11
 )
 
 require (
