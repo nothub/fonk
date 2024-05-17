@@ -19,5 +19,5 @@ golang.org/x/term v0.20.0 h1:VnkxpohqXaOBYJtBmEppKUG6mXpi+4O6purfc2+sMhw=
 golang.org/x/term v0.20.0/go.mod h1:8UkIAJTvZgivsXaD6/pH6U9ecQzZ45awqEOzuCvwpFY=
 humungus.tedunangst.com/r/gonix v0.1.4 h1:FuvWYQlFIzmfHxfvIfq5SYpSiHhFcpJqq3pi+w45s78=
 humungus.tedunangst.com/r/gonix v0.1.4/go.mod h1:VFBc2bPDXr1ayHOmHUutxYu8fSM+pkwK8o36h4rkORg=
-humungus.tedunangst.com/r/webs v0.7.16 h1:euavInNac0kYTafurCcuSGV2T9w0MeCaRfxzHX690Yw=
-humungus.tedunangst.com/r/webs v0.7.16/go.mod h1:ylhqHSPI0Oi7b4nsnx5mSO7AjLXN7wFpEHayLfN/ugk=
+humungus.tedunangst.com/r/webs v0.7.17 h1:OYdD0obSs1etWPebr2OAU2+k7SeChUr62hzVkYQOr+g=
+humungus.tedunangst.com/r/webs v0.7.17/go.mod h1:ylhqHSPI0Oi7b4nsnx5mSO7AjLXN7wFpEHayLfN/ugk=
